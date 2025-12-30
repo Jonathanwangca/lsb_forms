@@ -1,0 +1,61 @@
+# ============================================
+# LSB RFQ System - Git Ignore Configuration
+# ============================================
+
+# Environment files (contains sensitive data)
+.env
+.env.local
+.env.*.local
+
+# IDE and Editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Claude AI working directory
+.claude/
+
+# Uploaded files
+uploads/
+
+# Log files
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+nul
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Excel and temporary office files
+~$*.xlsx
+~$*.xls
+~$*.docx
+~$*.doc
+*.xlsx
+*.xls
+
+# Node modules (if any)
+node_modules/
+
+# Composer (if any)
+vendor/
+
+# Cache
+cache/
+*.cache
+
+# Backup files
+*.bak
+*.backup

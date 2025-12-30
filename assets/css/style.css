@@ -1,0 +1,345 @@
+/**
+ * LSB RFQ System Styles
+ */
+
+:root {
+    --primary-color: #0d6efd;
+    --secondary-color: #6c757d;
+    --success-color: #198754;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+}
+
+/* 表单区域样式 - 紧凑版 */
+.form-section {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    margin-bottom: 15px;
+}
+
+.form-section-header {
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+    color: white;
+    padding: 8px 15px;
+    font-weight: 600;
+    font-size: 0.9em;
+    border-radius: 5px 5px 0 0;
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.form-section-header:hover {
+    background: linear-gradient(135deg, #0a58ca 0%, #084298 100%);
+}
+
+.form-section-header .collapse-icon {
+    transition: transform 0.3s ease;
+    font-size: 0.8em;
+}
+
+.form-section.collapsed .form-section-header {
+    border-radius: 5px;
+}
+
+.form-section.collapsed .form-section-header .collapse-icon {
+    transform: rotate(-90deg);
+}
+
+.form-section-body {
+    padding: 15px;
+    transition: max-height 0.3s ease, padding 0.3s ease, opacity 0.3s ease;
+    overflow: hidden;
+}
+
+.form-section.collapsed .form-section-body {
+    max-height: 0 !important;
+    padding-top: 0;
+    padding-bottom: 0;
+    opacity: 0;
+    border-top: none;
+}
+
+/* 子区域样式 - 紧凑版 */
+.form-subsection {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 5px;
+    padding: 12px;
+    margin-bottom: 12px;
+}
+
+.form-subsection-title {
+    font-weight: 600;
+    font-size: 0.85em;
+    color: #495057;
+    margin-bottom: 12px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid #0d6efd;
+}
+
+/* 表单控件 - 紧凑版 */
+.form-label {
+    font-weight: 500;
+    color: #495057;
+    margin-bottom: 3px;
+    font-size: 0.85em;
+}
+
+.form-label-cn {
+    display: block;
+    font-size: 0.85em;
+}
+
+.form-label-en {
+    display: block;
+    font-size: 0.75em;
+    color: #6c757d;
+}
+
+.form-control,
+.form-select {
+    font-size: 0.85em;
+    padding: 0.35rem 0.65rem;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+}
+
+/* Switch 开关样式 - 网格布局 */
+.switch-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px 15px;
+}
+
+@media (min-width: 1200px) {
+    .switch-group {
+        grid-template-columns: repeat(6, 1fr);
+    }
+}
+
+@media (min-width: 1400px) {
+    .switch-group {
+        grid-template-columns: repeat(7, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .switch-group {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.switch-group .form-check {
+    margin: 0;
+}
+
+.form-check.form-switch {
+    padding-left: 2.5em;
+}
+
+.form-check.form-switch .form-check-input {
+    width: 2.2em;
+    height: 1.15em;
+    margin-left: -2.5em;
+    cursor: pointer;
+    background-color: #dee2e6;
+    border: none;
+    transition: background-color 0.15s ease-in-out;
+}
+
+.form-check.form-switch .form-check-input:checked {
+    background-color: #0d6efd;
+}
+
+.form-check.form-switch .form-check-input:focus {
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.form-check.form-switch .form-check-label {
+    font-size: 0.82em;
+    color: #495057;
+    cursor: pointer;
+    line-height: 1.4;
+}
+
+/* 复选框组 (保留兼容) */
+.checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 20px;
+}
+
+.checkbox-group .form-check {
+    min-width: 180px;
+}
+
+/* 表格样式 */
+.table-rfq {
+    font-size: 0.9em;
+}
+
+.table-rfq th {
+    background: #f8f9fa;
+    font-weight: 600;
+}
+
+/* 状态标签 */
+.badge-draft { background-color: #6c757d; }
+.badge-submitted { background-color: #0d6efd; }
+.badge-quoted { background-color: #ffc107; color: #212529; }
+.badge-approved { background-color: #198754; }
+.badge-rejected { background-color: #dc3545; }
+
+/* 按钮组 */
+.btn-group-actions {
+    display: flex;
+    gap: 5px;
+}
+
+/* 工具栏 */
+.toolbar {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+/* 列表页样式 */
+.rfq-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+/* 动态添加行 */
+.dynamic-row {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 10px;
+    position: relative;
+}
+
+.dynamic-row .btn-remove {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+}
+
+/* 打印样式 */
+@media print {
+    .navbar, .toolbar, .btn, footer {
+        display: none !important;
+    }
+
+    .form-section {
+        break-inside: avoid;
+        border: 1px solid #000;
+    }
+
+    .form-section-header {
+        background: #f0f0f0 !important;
+        color: #000 !important;
+        -webkit-print-color-adjust: exact;
+    }
+
+    body {
+        font-size: 10pt;
+    }
+}
+
+/* Letter Size (8.5 x 11 inches) */
+@page {
+    size: letter;
+    margin: 0.5in;
+}
+
+/* A4 Size */
+@page a4 {
+    size: A4;
+    margin: 15mm;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .form-section-body {
+        padding: 15px;
+    }
+
+    .checkbox-group .form-check {
+        min-width: 100%;
+    }
+
+    .toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
+
+/* 自动保存指示器 */
+.autosave-indicator {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 10px 20px;
+    background: #198754;
+    color: white;
+    border-radius: 6px;
+    display: none;
+    z-index: 1000;
+}
+
+.autosave-indicator.show {
+    display: block;
+    animation: fadeInOut 2s ease-in-out;
+}
+
+@keyframes fadeInOut {
+    0% { opacity: 0; }
+    20% { opacity: 1; }
+    80% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+/* 加载指示器 */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #0d6efd;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
