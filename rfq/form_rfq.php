@@ -5,7 +5,7 @@
  *
  * 此文件为主表单入口，各部分内容拆分到 _section_*.php 文件中便于维护
  */
-require_once dirname(__DIR__) . '/includes/header.php';
+require_once dirname(__DIR__) . '/includes/rfq_header.php';
 
 // 获取当前语言
 $lang = getLang();
@@ -54,6 +54,9 @@ $noLabel = $lang === 'en' ? 'No' : ($lang === 'cn' ? '否' : '否 No');
                 <h4 class="mb-0">
                     <?php if ($isEdit): ?>
                         <i class="bi bi-pencil-square"></i> <?php echo $lang === 'en' ? 'Edit RFQ' : ($lang === 'cn' ? '编辑 RFQ' : '编辑 Edit RFQ'); ?>: <?php echo h($main['rfq_no']); ?>
+                        <span class="badge badge-<?php echo h($main['status'] ?? 'draft'); ?> ms-2" style="font-size: 0.6em; vertical-align: middle;">
+                            <?php echo h(getRefValue('rfq_status', $main['status'] ?? 'draft')); ?>
+                        </span>
                     <?php else: ?>
                         <i class="bi bi-plus-circle"></i> <?php echo $lang === 'en' ? 'New RFQ' : ($lang === 'cn' ? '新建 RFQ' : '新建 New RFQ'); ?>
                     <?php endif; ?>
@@ -68,27 +71,21 @@ $noLabel = $lang === 'en' ? 'No' : ($lang === 'cn' ? '否' : '否 No');
                         <i class="bi bi-arrows-collapse"></i>
                     </button>
                 </div>
-                <button type="button" class="btn btn-outline-secondary" onclick="RFQ.saveToLocal()">
+                <button type="button" class="btn btn-outline-secondary" onclick="if(typeof RFQ!=='undefined')RFQ.saveToLocal()">
                     <i class="bi bi-hdd"></i> <?php echo $lang === 'en' ? 'Save Local' : '本地保存'; ?>
                 </button>
-                <button type="button" class="btn btn-outline-primary" onclick="RFQ.saveDraft()">
+                <button type="button" class="btn btn-outline-primary" onclick="if(typeof RFQ!=='undefined')RFQ.saveDraft()">
                     <i class="bi bi-save"></i> <?php echo BL('save_draft'); ?>
                 </button>
                 <?php if ($isEdit): ?>
-                <button type="button" class="btn btn-outline-info" onclick="RFQ.saveJsonFile(<?php echo $rfqId; ?>)">
+                <button type="button" class="btn btn-outline-info" onclick="if(typeof RFQ!=='undefined')RFQ.saveJsonFile(<?php echo $rfqId; ?>)">
                     <i class="bi bi-download"></i> <?php echo BL('export_json'); ?>
                 </button>
-                <div class="btn-group">
-                    <button type="button" class="btn btn-outline-success dropdown-toggle" data-bs-toggle="dropdown">
-                        <i class="bi bi-printer"></i> <?php echo $lang === 'en' ? 'Print PDF' : '打印 PDF'; ?>
-                    </button>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="#" onclick="RFQ.printPdf(<?php echo $rfqId; ?>, 'letter')">Letter Size</a></li>
-                        <li><a class="dropdown-item" href="#" onclick="RFQ.printPdf(<?php echo $rfqId; ?>, 'a4')">A4 Size</a></li>
-                    </ul>
-                </div>
+                <a href="/aiforms/rfq/print.php?id=<?php echo $rfqId; ?>&size=letter" target="_blank" class="btn btn-outline-success">
+                    <i class="bi bi-printer"></i> <?php echo $lang === 'en' ? 'Print PDF' : '打印 PDF'; ?>
+                </a>
                 <?php endif; ?>
-                <button type="submit" form="rfq-form" class="btn btn-primary">
+                <button type="submit" form="rfq-form" class="btn btn-primary" onclick="if(typeof RFQ!=='undefined')RFQ.setStatusSubmitted()">
                     <i class="bi bi-check-lg"></i> <?php echo BL('submit'); ?>
                 </button>
             </div>
@@ -99,52 +96,54 @@ $noLabel = $lang === 'en' ? 'No' : ($lang === 'cn' ? '否' : '否 No');
             <input type="hidden" name="id" value="<?php echo $rfqId; ?>">
 
             <?php
-            // 联系人信息
-            include __DIR__ . '/_section_contact.php';
+            // A. 联系人信息
+            include __DIR__ . '/_section_A_contact.php';
 
-            // 基本信息
-            include __DIR__ . '/_section_basic.php';
+            // B. 基本信息
+            include __DIR__ . '/_section_B_basic.php';
 
-            // 报价资料
-            include __DIR__ . '/_section_order_entry.php';
+            // C. 报价资料
+            include __DIR__ . '/_section_C_order_entry.php';
 
-            // 结构概述
-            include __DIR__ . '/_section_structure.php';
+            // D. 结构概述
+            include __DIR__ . '/_section_D_structure.php';
 
-            // 报价范围
-            include __DIR__ . '/_section_scope.php';
+            // E. 报价范围
+            include __DIR__ . '/_section_E_scope.php';
 
-            // 建筑尺寸 & 钢结构
-            include __DIR__ . '/_section_steel.php';
+            // F. 建筑尺寸 & 钢结构
+            include __DIR__ . '/_section_F_steel.php';
 
-            // 屋墙面做法说明
-            include __DIR__ . '/_section_method.php';
+            // G. 屋墙面做法说明
+            include __DIR__ . '/_section_G_method.php';
 
-            // 围护系统配置（特殊配置、改造项目等）
-            include __DIR__ . '/_section_envelope.php';
+            // H. 围护系统配置（特殊配置、改造项目等）
+            include __DIR__ . '/_section_H_envelope.php';
 
-            // 屋面系统材质要求
-            include __DIR__ . '/_section_roof_material.php';
+            // I. 屋面系统材质要求
+            include __DIR__ . '/_section_I_roof_material.php';
 
-            // 墙面系统材质要求
-            include __DIR__ . '/_section_wall_material.php';
+            // J. 墙面系统材质要求
+            include __DIR__ . '/_section_J_wall_material.php';
 
-            // V3.2: 板材规格明细（可选，用于复杂项目的细化规格）
-            // include __DIR__ . '/_section_cladding_spec.php';
+            // K. 补充说明
+            include __DIR__ . '/_section_K_supplements.php';
 
-            // V3.2: 补充说明
-            include __DIR__ . '/_section_supplements.php';
-
-            // 状态
-            include __DIR__ . '/_section_status.php';
+            // L. 状态
+            include __DIR__ . '/_section_L_status.php';
             ?>
 
         </form>
     </div>
 </div>
 
+<!-- 浮动保存按钮 -->
+<button type="button" class="floating-save-btn" id="floatingSaveBtn" onclick="if(typeof RFQ!=='undefined')RFQ.floatingSave()" title="<?php echo $lang === 'en' ? 'Save Draft' : '保存草稿'; ?>">
+    <i class="bi bi-save"></i>
+</button>
+
 <div class="autosave-indicator">
     <i class="bi bi-check-circle"></i> Saved
 </div>
 
-<?php require_once dirname(__DIR__) . '/includes/footer.php'; ?>
+<?php require_once dirname(__DIR__) . '/includes/rfq_footer.php'; ?>

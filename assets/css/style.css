@@ -81,6 +81,21 @@
     border-bottom: 2px solid #0d6efd;
 }
 
+/* Section 编号样式 */
+.section-number {
+    font-weight: 700;
+    margin-right: 6px;
+    color: #fff;
+}
+
+.subsection-number {
+    display: inline-block;
+    font-weight: 700;
+    color: #0d6efd;
+    margin-right: 6px;
+    min-width: 32px;
+}
+
 /* 表单控件 - 紧凑版 */
 .form-label {
     font-weight: 500;
@@ -289,6 +304,47 @@
         flex-direction: column;
         align-items: stretch;
     }
+}
+
+/* 浮动保存按钮 */
+.floating-save-btn {
+    position: fixed;
+    right: 30px;
+    bottom: 80px;
+    z-index: 1050;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.4);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.floating-save-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(13, 110, 253, 0.5);
+    background: linear-gradient(135deg, #0a58ca 0%, #084298 100%);
+}
+
+.floating-save-btn:active {
+    transform: scale(0.95);
+}
+
+.floating-save-btn.saving {
+    background: linear-gradient(135deg, #198754 0%, #146c43 100%);
+    box-shadow: 0 4px 12px rgba(25, 135, 84, 0.4);
+}
+
+.floating-save-btn .spinner-border {
+    width: 20px;
+    height: 20px;
 }
 
 /* 自动保存指示器 */

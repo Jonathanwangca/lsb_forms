@@ -128,7 +128,7 @@ function renderWallPanelRow($panel, $index, $panelType, $profileRef, $lang, $sel
     <td>
         <select class="form-select form-select-sm" name="<?php echo $prefix; ?>[color]">
             <option value=""><?php echo $selectPlaceholder; ?></option>
-            <?php foreach (getRefOptions('panel_color_ral') as $opt): ?>
+            <?php foreach (getRefOptions('panel_color') as $opt): ?>
             <option value="<?php echo h($opt['value']); ?>" <?php echo ($panel['color'] ?? '') == $opt['value'] ? 'selected' : ''; ?>>
                 <?php echo h($opt['label']); ?>
             </option>
@@ -138,7 +138,7 @@ function renderWallPanelRow($panel, $index, $panelType, $profileRef, $lang, $sel
     <td>
         <select class="form-select form-select-sm" name="<?php echo $prefix; ?>[origin]">
             <option value=""><?php echo $selectPlaceholder; ?></option>
-            <?php foreach (getRefOptions('panel_brand') as $opt): ?>
+            <?php foreach (getRefOptions('panel_origin') as $opt): ?>
             <option value="<?php echo h($opt['value']); ?>" <?php echo ($panel['origin'] ?? '') == $opt['value'] ? 'selected' : ''; ?>>
                 <?php echo h($opt['label']); ?>
             </option>
@@ -234,12 +234,12 @@ function renderWallInsulationRow($insul, $index, $lang, $selectPlaceholder) {
 <!-- ========== 墙面系统材质要求 ========== -->
 <div class="form-section">
     <div class="form-section-header">
-        <i class="bi bi-building"></i> <?php echo sectionTitle('墙面系统材质要求', 'Wall Material Requirements'); ?>
+        <i class="bi bi-building"></i> <span class="section-number">J.</span> <?php echo sectionTitle('墙面系统材质要求', 'Wall Material Requirements'); ?>
     </div>
     <div class="form-section-body">
         <!-- 墙面配置 -->
         <div class="form-subsection">
-            <div class="form-subsection-title"><?php echo sectionTitle('墙面配置', 'Wall Configuration'); ?></div>
+            <div class="form-subsection-title"><span class="subsection-number">J.1</span> <?php echo sectionTitle('墙面配置', 'Wall Configuration'); ?></div>
             <div class="row g-3">
                 <div class="col-md-2">
                     <label class="form-label"><?php echo $lang === 'en' ? 'Outer Curb Height' : '墙面外板墙裙高度'; ?></label>
@@ -287,7 +287,7 @@ function renderWallInsulationRow($insul, $index, $lang, $selectPlaceholder) {
         <!-- 墙面外板 -->
         <div class="form-subsection">
             <div class="form-subsection-title d-flex justify-content-between align-items-center">
-                <span><?php echo sectionTitle('墙面外板', 'Wall Outer Panel'); ?></span>
+                <span><span class="subsection-number">J.2</span> <?php echo sectionTitle('墙面外板', 'Wall Outer Panel'); ?></span>
                 <button type="button" class="btn btn-sm btn-outline-primary" onclick="WallMaterial.addPanelRow('outer')">
                     <i class="bi bi-plus"></i> <?php echo $lang === 'en' ? 'Add' : '添加'; ?>
                 </button>
@@ -317,7 +317,7 @@ function renderWallInsulationRow($insul, $index, $lang, $selectPlaceholder) {
         <!-- 墙面保温棉 -->
         <div class="form-subsection">
             <div class="form-subsection-title d-flex justify-content-between align-items-center">
-                <span><?php echo sectionTitle('墙面保温棉', 'Wall Insulation'); ?></span>
+                <span><span class="subsection-number">J.3</span> <?php echo sectionTitle('墙面保温棉', 'Wall Insulation'); ?></span>
                 <button type="button" class="btn btn-sm btn-outline-primary" onclick="WallMaterial.addInsulationRow()">
                     <i class="bi bi-plus"></i> <?php echo $lang === 'en' ? 'Add' : '添加'; ?>
                 </button>
@@ -346,7 +346,7 @@ function renderWallInsulationRow($insul, $index, $lang, $selectPlaceholder) {
 
         <!-- 墙面防水透气膜/隔汽膜/钢丝网 -->
         <div class="form-subsection">
-            <div class="form-subsection-title"><?php echo sectionTitle('墙面防水透气膜/隔汽膜/钢丝网', 'Wall Membrane & Wire Mesh'); ?></div>
+            <div class="form-subsection-title"><span class="subsection-number">J.4</span> <?php echo sectionTitle('墙面防水透气膜/隔汽膜/钢丝网', 'Wall Membrane & Wire Mesh'); ?></div>
             <div class="row g-3">
                 <div class="col-md-2">
                     <label class="form-label"><?php echo $lang === 'en' ? 'Waterproof Membrane' : '防水透气膜'; ?></label>
@@ -382,7 +382,7 @@ function renderWallInsulationRow($insul, $index, $lang, $selectPlaceholder) {
         <!-- 墙面内衬板 -->
         <div class="form-subsection">
             <div class="form-subsection-title d-flex justify-content-between align-items-center">
-                <span><?php echo sectionTitle('墙面内衬板', 'Wall Liner Panel'); ?></span>
+                <span><span class="subsection-number">J.5</span> <?php echo sectionTitle('墙面内衬板', 'Wall Liner Panel'); ?></span>
                 <button type="button" class="btn btn-sm btn-outline-primary" onclick="WallMaterial.addPanelRow('liner')">
                     <i class="bi bi-plus"></i> <?php echo $lang === 'en' ? 'Add' : '添加'; ?>
                 </button>
@@ -412,7 +412,7 @@ function renderWallInsulationRow($insul, $index, $lang, $selectPlaceholder) {
         <!-- 女儿墙内衬板 -->
         <div class="form-subsection">
             <div class="form-subsection-title d-flex justify-content-between align-items-center">
-                <span><?php echo sectionTitle('女儿墙内衬板', 'Parapet Liner Panel'); ?></span>
+                <span><span class="subsection-number">J.6</span> <?php echo sectionTitle('女儿墙内衬板', 'Parapet Liner Panel'); ?></span>
                 <button type="button" class="btn btn-sm btn-outline-primary" onclick="WallMaterial.addPanelRow('parapet_liner')">
                     <i class="bi bi-plus"></i> <?php echo $lang === 'en' ? 'Add' : '添加'; ?>
                 </button>
@@ -442,7 +442,7 @@ function renderWallInsulationRow($insul, $index, $lang, $selectPlaceholder) {
         <!-- 内隔墙墙面板 -->
         <div class="form-subsection">
             <div class="form-subsection-title d-flex justify-content-between align-items-center">
-                <span><?php echo sectionTitle('内隔墙墙面板', 'Partition Wall Panel'); ?></span>
+                <span><span class="subsection-number">J.7</span> <?php echo sectionTitle('内隔墙墙面板', 'Partition Wall Panel'); ?></span>
                 <button type="button" class="btn btn-sm btn-outline-primary" onclick="WallMaterial.addPanelRow('partition')">
                     <i class="bi bi-plus"></i> <?php echo $lang === 'en' ? 'Add' : '添加'; ?>
                 </button>
@@ -573,10 +573,12 @@ const WallMaterial = {
 
             // 更新所有input/select的name属性
             const newPrefix = `panels[wall_${panelType}_${num}]`;
+            // 构建精确的正则表达式，使用当前panelType
+            const oldPrefixPattern = new RegExp(`panels\\[wall_${panelType}_\\d+\\]`);
             row.querySelectorAll('input, select').forEach(input => {
                 const name = input.name;
                 if (name) {
-                    const newName = name.replace(/panels\[wall_\w+_\d+\]/, newPrefix);
+                    const newName = name.replace(oldPrefixPattern, newPrefix);
                     input.name = newName;
                 }
             });

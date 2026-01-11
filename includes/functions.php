@@ -91,11 +91,30 @@ function CL($key) {
 
 /**
  * 获取区块标题 (根据语言设置)
- * @param string $cn 中文标题
- * @param string $en 英文标题
+ * 优先从 labels.json 的 sections 分类中查找，找不到时使用传入的默认值
+ * @param string $cn 中文标题 (默认值)
+ * @param string $en 英文标题 (默认值)
+ * @param string $key 可选的标签键名，用于从labels.json查找
  */
-function sectionTitle($cn, $en) {
+function sectionTitle($cn, $en, $key = null) {
     $lang = getLang();
+    $labels = $GLOBALS['lang_labels'] ?? [];
+
+    // 尝试从 labels.json 中查找
+    $lookupKey = $key;
+    if (!$lookupKey) {
+        // 将英文标签转换为 snake_case 作为查找键
+        $lookupKey = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '_', trim($en)));
+        $lookupKey = trim($lookupKey, '_');
+    }
+
+    // 在 sections 分类中查找
+    if (isset($labels['sections'][$lookupKey])) {
+        $item = $labels['sections'][$lookupKey];
+        $cn = $item['cn'] ?? $cn;
+        $en = $item['en'] ?? $en;
+    }
+
     if ($lang === 'en') {
         return $en;
     } elseif ($lang === 'cn') {
@@ -106,27 +125,73 @@ function sectionTitle($cn, $en) {
 
 /**
  * 获取字段标签HTML (支持中英文切换)
- * @param string $cn 中文标签
- * @param string $en 英文标签
+ * 使用统一的 rfqLabelHtml() 函数，优先从 rfq_schema.php 查找，然后 labels.json，最后使用传入的默认值
+ * @param string $cn 中文标签 (默认值)
+ * @param string $en 英文标签 (默认值)
+ * @param string $key 可选的标签键名，用于从schema/labels查找
  */
-function fieldLabel($cn, $en) {
+function fieldLabel($cn, $en, $key = null) {
+    // 如果 rfqLabelHtml 函数可用，使用它
+    if (function_exists('rfqLabelHtml')) {
+        return rfqLabelHtml($cn, $en, $key);
+    }
+
+    // 回退到原始实现（当 rfq_render.php 未加载时）
     $lang = getLang();
+    $labels = $GLOBALS['lang_labels'] ?? [];
+
+    $lookupKey = $key;
+    if (!$lookupKey) {
+        $lookupKey = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '_', trim($en)));
+        $lookupKey = trim($lookupKey, '_');
+    }
+
+    if (isset($labels['fields'][$lookupKey])) {
+        $item = $labels['fields'][$lookupKey];
+        $cn = $item['cn'] ?? $cn;
+        $en = $item['en'] ?? $en;
+    }
+
     if ($lang === 'en') {
         return $en;
     } elseif ($lang === 'cn') {
         return $cn;
     }
-    // both模式：使用span分隔
     return '<span class="form-label-cn">' . $cn . '</span><span class="form-label-en">' . $en . '</span>';
 }
 
 /**
  * 获取开关/复选框标签 (根据语言设置)
- * @param string $cn 中文标签
- * @param string $en 英文标签
+ * 优先从 labels.json 的 fields 分类中查找，找不到时使用传入的默认值
+ * @param string $cn 中文标签 (默认值)
+ * @param string $en 英文标签 (默认值)
+ * @param string $key 可选的标签键名，用于从labels.json查找
  */
-function switchLabel($cn, $en) {
-    return sectionTitle($cn, $en); // 使用相同的逻辑
+function switchLabel($cn, $en, $key = null) {
+    $lang = getLang();
+    $labels = $GLOBALS['lang_labels'] ?? [];
+
+    // 尝试从 labels.json 中查找
+    $lookupKey = $key;
+    if (!$lookupKey) {
+        // 将英文标签转换为 snake_case 作为查找键
+        $lookupKey = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '_', trim($en)));
+        $lookupKey = trim($lookupKey, '_');
+    }
+
+    // 在 fields 分类中查找
+    if (isset($labels['fields'][$lookupKey])) {
+        $item = $labels['fields'][$lookupKey];
+        $cn = $item['cn'] ?? $cn;
+        $en = $item['en'] ?? $en;
+    }
+
+    if ($lang === 'en') {
+        return $en;
+    } elseif ($lang === 'cn') {
+        return $cn;
+    }
+    return $cn . ' ' . $en;
 }
 
 /**
@@ -293,9 +358,18 @@ function saveRfqData($data, $rfqId = null) {
         // 保存主表
         $mainData = $data['main'] ?? [];
         if ($rfqId) {
+            // 编辑模式
             unset($mainData['id']);
+
+            // 检查数据库中的 rfq_no 是否为空，如果为空则生成新的
+            $existing = dbQueryOne("SELECT rfq_no FROM lsb_rfq_main WHERE id = ?", [$rfqId]);
+            if ($existing && empty($existing['rfq_no']) && empty($mainData['rfq_no'])) {
+                $mainData['rfq_no'] = generateRfqNo();
+            }
+
             dbUpdate('lsb_rfq_main', $mainData, 'id = ?', [$rfqId]);
         } else {
+            // 新建模式
             if (empty($mainData['rfq_no'])) {
                 $mainData['rfq_no'] = generateRfqNo();
             }

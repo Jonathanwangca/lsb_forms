@@ -2,8 +2,12 @@
 /**
  * RFQ PDF 打印页面
  * LSB RFQ System V3.2
+ *
+ * Note: This file uses the unified schema (rfq_schema.php) for consistency
+ * with the form UI. Any label or field changes should be made in the schema.
  */
 require_once dirname(__DIR__) . '/includes/functions.php';
+require_once __DIR__ . '/rfq_render.php';
 
 $rfqId = isset($_GET['id']) ? intval($_GET['id']) : 0;
 $size = isset($_GET['size']) ? $_GET['size'] : 'letter';
@@ -13,6 +17,8 @@ $lang = isset($_GET['lang']) ? $_GET['lang'] : (isset($_COOKIE['rfq_lang']) ? $_
 if (!in_array($lang, ['en', 'cn', 'both'])) {
     $lang = 'both';
 }
+// 设置全局语言变量，供 getRefValue() 等函数使用
+$GLOBALS['current_lang'] = $lang;
 
 if (!$rfqId) {
     die('RFQ ID is required');
@@ -27,24 +33,25 @@ $main = $rfqData['main'];
 $orderEntry = $rfqData['order_entry'] ?? [];
 $steel = $rfqData['steel'] ?? [];
 $envelope = $rfqData['envelope'] ?? [];
+$panels = $rfqData['panels'] ?? [];
+$insulations = $rfqData['insulations'] ?? [];
+$methods = $rfqData['methods'] ?? [];
+$drainages = $rfqData['drainages'] ?? [];
+$remarks = $rfqData['remarks'] ?? [];
 // V3.2 新增
 $claddingSpecs = $rfqData['cladding_specs'] ?? [];
+$claddingMethods = $rfqData['cladding_methods'] ?? [];
 $supplements = $rfqData['supplements'] ?? [];
 
 // 设置页面大小CSS类
 $pageClass = $size === 'a4' ? 'page-a4' : 'page-letter';
 
 /**
- * 打印标签辅助函数
+ * 打印标签辅助函数 - 使用统一的 rfqLabel()
+ * 优先从 rfq_schema.php 查找，然后 labels.json，最后使用传入的默认值
  */
-function printLabel($cn, $en) {
-    global $lang;
-    if ($lang === 'en') {
-        return $en;
-    } elseif ($lang === 'cn') {
-        return $cn;
-    }
-    return $cn . ' ' . $en;
+function printLabel($cn, $en, $key = null) {
+    return rfqLabel($cn, $en, $key);
 }
 
 /**
@@ -57,6 +64,23 @@ function printYesNo($value) {
         return $lang === 'en' ? 'Yes' : ($lang === 'cn' ? '是' : '是 Yes');
     }
     return $lang === 'en' ? 'No' : ($lang === 'cn' ? '否' : '否 No');
+}
+
+/**
+ * 打印值（空值返回N/A）
+ */
+function printValue($value, $suffix = '') {
+    if ($value === null || $value === '') return 'N/A';
+    return h($value) . ($suffix ? ' ' . $suffix : '');
+}
+
+/**
+ * 打印引用值（空值返回N/A）
+ */
+function printRefValue($category, $value) {
+    if ($value === null || $value === '') return 'N/A';
+    $result = getRefValue($category, $value);
+    return $result ?: h($value);
 }
 ?>
 <!DOCTYPE html>
@@ -120,6 +144,16 @@ function printYesNo($value) {
             font-size: 10pt;
             border: 1px solid #000;
             border-bottom: none;
+        }
+
+        .section-number {
+            font-weight: bold;
+            margin-right: 4px;
+        }
+
+        .subsection-number {
+            font-weight: bold;
+            margin-right: 4px;
         }
 
         .print-section-body {
@@ -271,45 +305,43 @@ function printYesNo($value) {
         </div>
 
         <!-- 联系人信息 -->
-        <?php if (!empty($main['contact_to']) || !empty($main['attn']) || !empty($main['account_manager'])): ?>
         <div class="print-section">
-            <div class="print-section-header"><?php echo printLabel('联系人信息', 'Contact Information'); ?></div>
+            <div class="print-section-header"><span class="section-number">A.</span> <?php echo printLabel('联系人信息', 'Contact Information'); ?></div>
             <div class="print-section-body">
                 <div class="info-row">
                     <div class="info-item">
                         <div class="info-label"><?php echo printLabel('发给', 'To'); ?></div>
-                        <div class="info-value"><?php echo h($main['contact_to']); ?></div>
+                        <div class="info-value"><?php echo printValue($main['contact_to']); ?></div>
                     </div>
                     <div class="info-item">
                         <div class="info-label"><?php echo printLabel('电子邮箱', 'Email'); ?></div>
-                        <div class="info-value"><?php echo h($main['contact_email']); ?></div>
+                        <div class="info-value"><?php echo printValue($main['contact_email']); ?></div>
                     </div>
                     <div class="info-item">
                         <div class="info-label"><?php echo printLabel('收件人', 'Attn'); ?></div>
-                        <div class="info-value"><?php echo h($main['attn']); ?></div>
+                        <div class="info-value"><?php echo printValue($main['attn']); ?></div>
                     </div>
                 </div>
                 <div class="info-row">
                     <div class="info-item">
                         <div class="info-label"><?php echo printLabel('客户经理', 'Account Manager'); ?></div>
-                        <div class="info-value"><?php echo h($main['account_manager']); ?></div>
+                        <div class="info-value"><?php echo printValue($main['account_manager']); ?></div>
                     </div>
                     <div class="info-item">
                         <div class="info-label"><?php echo printLabel('职称', 'Title'); ?></div>
-                        <div class="info-value"><?php echo h($main['account_manager_title']); ?></div>
+                        <div class="info-value"><?php echo printValue($main['account_manager_title']); ?></div>
                     </div>
                     <div class="info-item">
                         <div class="info-label"><?php echo printLabel('项目类型', 'Project Type'); ?></div>
-                        <div class="info-value"><?php echo h($main['project_type']); ?></div>
+                        <div class="info-value"><?php echo printValue($main['project_type']); ?></div>
                     </div>
                 </div>
             </div>
         </div>
-        <?php endif; ?>
 
         <!-- 基本信息 -->
         <div class="print-section">
-            <div class="print-section-header"><?php echo printLabel('基本信息', 'Basic Information'); ?></div>
+            <div class="print-section-header"><span class="section-number">B.</span> <?php echo printLabel('基本信息', 'Basic Information'); ?></div>
             <div class="print-section-body">
                 <div class="info-row">
                     <div class="info-item">
@@ -353,10 +385,10 @@ function printYesNo($value) {
         </div>
 
         <!-- 报价资料 Order Entry -->
-        <?php if (!empty($orderEntry)): ?>
         <div class="print-section">
-            <div class="print-section-header"><?php echo printLabel('报价资料', 'Order Entry'); ?></div>
+            <div class="print-section-header"><span class="section-number">C.</span> <?php echo printLabel('报价资料', 'Order Entry'); ?></div>
             <div class="print-section-body">
+                <?php if (!empty($orderEntry)): ?>
                 <div class="checkbox-list">
                     <div class="checkbox-item <?php echo ($orderEntry['mbs_drawing'] ?? 0) ? 'checked' : 'unchecked'; ?>">
                         <?php echo printLabel('MBS结构图纸', 'MBS Drawing'); ?>
@@ -377,21 +409,21 @@ function printYesNo($value) {
                         <?php echo printLabel('其他文件', 'Other'); ?>
                     </div>
                 </div>
-                <?php if (!empty($orderEntry['other_docs_desc'])): ?>
                 <div class="info-row">
                     <div class="info-item full">
                         <div class="info-label"><?php echo printLabel('其他文件描述', 'Other Documents Description'); ?></div>
-                        <div class="info-value"><?php echo h($orderEntry['other_docs_desc']); ?></div>
+                        <div class="info-value"><?php echo printValue($orderEntry['other_docs_desc'] ?? null); ?></div>
                     </div>
                 </div>
+                <?php else: ?>
+                <div class="info-value" style="color: #999;">N/A</div>
                 <?php endif; ?>
             </div>
         </div>
-        <?php endif; ?>
 
         <!-- 结构概述 -->
         <div class="print-section">
-            <div class="print-section-header"><?php echo printLabel('结构概述', 'Building Structure'); ?></div>
+            <div class="print-section-header"><span class="section-number">D.</span> <?php echo printLabel('结构概述', 'Building Structure'); ?></div>
             <div class="print-section-body">
                 <div class="checkbox-list">
                     <div class="checkbox-item <?php echo $main['pre_eng_building'] ? 'checked' : 'unchecked'; ?>">
@@ -427,11 +459,11 @@ function printYesNo($value) {
 
         <!-- 报价范围 -->
         <div class="print-section">
-            <div class="print-section-header"><?php echo printLabel('报价范围', 'Scope of Work'); ?></div>
+            <div class="print-section-header"><span class="section-number">E.</span> <?php echo printLabel('报价范围', 'Scope of Work'); ?></div>
             <div class="print-section-body">
                 <div class="info-row">
                     <div class="info-item half">
-                        <div class="info-label"><?php echo printLabel('主次围材料', 'Scope Type'); ?></div>
+                        <div class="info-label"><?php echo printLabel('包含', 'Include'); ?></div>
                         <div class="info-value"><?php echo h(getRefValue('scope_of_work', $main['scope_type'])); ?></div>
                     </div>
                     <div class="info-item half">
@@ -492,52 +524,64 @@ function printYesNo($value) {
 
         <!-- 建筑尺寸 & 钢结构 -->
         <div class="print-section">
-            <div class="print-section-header"><?php echo printLabel('建筑描述 & 钢结构材料', 'Building Description & Steel Materials'); ?></div>
+            <div class="print-section-header"><span class="section-number">F.</span> <?php echo printLabel('建筑描述 & 钢结构材料', 'Building Description & Steel Materials'); ?></div>
             <div class="print-section-body">
                 <!-- 建筑尺寸 -->
-                <div class="subsection-title"><?php echo printLabel('建筑尺寸', 'Building Dimensions'); ?></div>
+                <div class="subsection-title"><span class="subsection-number">F.1</span> <?php echo printLabel('建筑尺寸', 'Building Dimensions'); ?></div>
                 <table class="print-table">
                     <tr>
                         <th><?php echo printLabel('长度', 'Length'); ?></th>
-                        <td><?php echo h($steel['length']); ?> m <?php echo !empty($steel['length_source']) ? '(' . h($steel['length_source']) . ')' : ''; ?></td>
+                        <td><?php echo printValue($steel['length'] ?? null, 'm'); ?> <?php echo !empty($steel['length_source']) ? '(' . h($steel['length_source']) . ')' : ''; ?></td>
                         <th><?php echo printLabel('宽度', 'Width'); ?></th>
-                        <td><?php echo h($steel['width']); ?> m <?php echo !empty($steel['width_source']) ? '(' . h($steel['width_source']) . ')' : ''; ?></td>
+                        <td><?php echo printValue($steel['width'] ?? null, 'm'); ?> <?php echo !empty($steel['width_source']) ? '(' . h($steel['width_source']) . ')' : ''; ?></td>
                         <th><?php echo printLabel('檐口高度', 'Eave Height'); ?></th>
-                        <td><?php echo h($steel['eave_height']); ?> m</td>
+                        <td><?php echo printValue($steel['eave_height'] ?? null, 'm'); ?> <?php echo !empty($steel['eave_height_source']) ? '(' . h($steel['eave_height_source']) . ')' : ''; ?></td>
                     </tr>
                     <tr>
                         <th><?php echo printLabel('女儿墙顶标高', 'Parapet Top Elevation'); ?></th>
-                        <td><?php echo h($steel['parapet_top_elevation']); ?> m</td>
+                        <td><?php echo printValue($steel['parapet_top_elevation'] ?? null, 'm'); ?></td>
                         <th><?php echo printLabel('女儿墙内衬板', 'Parapet Wall Liner'); ?></th>
-                        <td><?php echo h($steel['parapet_wall_liner']); ?></td>
+                        <td><?php echo printValue($steel['parapet_wall_liner'] ?? null); ?></td>
                         <th><?php echo printLabel('夹层范围', 'Mezzanine Area'); ?></th>
-                        <td><?php echo h($steel['mezzanine_floor_area']); ?></td>
+                        <td><?php echo printValue($steel['mezzanine_floor_area'] ?? null); ?></td>
+                    </tr>
+                    <tr>
+                        <th><?php echo printLabel('地面标高', 'Floor Elevation'); ?></th>
+                        <td><?php echo printValue($steel['floor_elevation'] ?? null, 'm'); ?></td>
+                        <th><?php echo printLabel('地面类型', 'Floor Type'); ?></th>
+                        <td colspan="3"><?php echo printValue($steel['floor_type'] ?? null); ?></td>
                     </tr>
                 </table>
 
                 <!-- 主结构材料 -->
-                <div class="subsection-title"><?php echo printLabel('主结构材料', 'Primary Steel'); ?></div>
+                <div class="subsection-title"><span class="subsection-number">F.2</span> <?php echo printLabel('主结构材料', 'Primary Steel'); ?></div>
                 <table class="print-table">
                     <tr>
                         <th><?php echo printLabel('材质', 'Steel Grade'); ?></th>
-                        <td><?php echo h($steel['steel_grade']); ?></td>
+                        <td><?php echo printValue($steel['steel_grade'] ?? null); ?></td>
                         <th><?php echo printLabel('原材料厂家', 'Steel Manufacturer'); ?></th>
-                        <td><?php echo h(getRefValue('steel_manufacturer', $steel['steel_manufacturer'])); ?></td>
+                        <td><?php echo printRefValue('steel_manufacturer', $steel['steel_manufacturer'] ?? null); ?></td>
                         <th><?php echo printLabel('加工厂', 'Plant'); ?></th>
-                        <td><?php echo h(getRefValue('processing_plant', $steel['processing_plant'])); ?></td>
+                        <td><?php echo printRefValue('processing_plant', $steel['processing_plant'] ?? null); ?></td>
                     </tr>
                     <tr>
                         <th><?php echo printLabel('底漆', 'Primer'); ?></th>
-                        <td><?php echo h(getRefValue('primer_type', $steel['primer_type'])); ?></td>
+                        <td><?php echo printRefValue('primer_type', $steel['primer_type'] ?? null); ?></td>
                         <th><?php echo printLabel('底漆厚度', 'Primer Thickness'); ?></th>
-                        <td><?php echo h($steel['primer_thickness']); ?> μm</td>
+                        <td><?php echo printValue($steel['primer_thickness'] ?? null, 'μm'); ?></td>
                         <th colspan="2"></th>
                     </tr>
+                    <?php if (!empty($steel['primary_steel_note'])): ?>
+                    <tr>
+                        <th><?php echo printLabel('备注', 'Note'); ?></th>
+                        <td colspan="5"><?php echo h($steel['primary_steel_note']); ?></td>
+                    </tr>
+                    <?php endif; ?>
                 </table>
 
                 <!-- 中间漆+面漆 -->
                 <?php if (!empty($steel['intermediate_coat']) || !empty($steel['top_coat_paint'])): ?>
-                <div class="subsection-title"><?php echo printLabel('中间漆+面漆', 'Intermediate & Top Coat'); ?></div>
+                <div class="subsection-title"><span class="subsection-number">F.3</span> <?php echo printLabel('中间漆+面漆', 'Intermediate & Top Coat'); ?></div>
                 <table class="print-table">
                     <tr>
                         <th><?php echo printLabel('中间漆', 'Intermediate Coat'); ?></th>
@@ -562,7 +606,7 @@ function printYesNo($value) {
 
                 <!-- 外露构件油漆 -->
                 <?php if (!empty($steel['exposed_paint'])): ?>
-                <div class="subsection-title"><?php echo printLabel('外露构件油漆', 'Exposed Paint'); ?></div>
+                <div class="subsection-title"><span class="subsection-number">F.4</span> <?php echo printLabel('外露构件油漆', 'Exposed Paint'); ?></div>
                 <table class="print-table">
                     <tr>
                         <th><?php echo printLabel('外露构件油漆', 'Exposed Paint'); ?></th>
@@ -575,7 +619,7 @@ function printYesNo($value) {
 
                 <!-- 防火涂料 -->
                 <?php if ($steel['fire_coating_na'] !== null || !empty($steel['fire_coating'])): ?>
-                <div class="subsection-title"><?php echo printLabel('普通钢结构防火涂料', 'Fire Coating'); ?></div>
+                <div class="subsection-title"><span class="subsection-number">F.5</span> <?php echo printLabel('普通钢结构防火涂料', 'Fire Coating'); ?></div>
                 <table class="print-table">
                     <tr>
                         <th><?php echo printLabel('状态', 'Status'); ?></th>
@@ -593,7 +637,7 @@ function printYesNo($value) {
                 <?php endif; ?>
 
                 <!-- 次结构材料 -->
-                <div class="subsection-title"><?php echo printLabel('次结构材料', 'Secondary Steel'); ?></div>
+                <div class="subsection-title"><span class="subsection-number">F.6</span> <?php echo printLabel('次结构材料', 'Secondary Steel'); ?></div>
                 <table class="print-table">
                     <tr>
                         <th><?php echo printLabel('原材料厂家', 'Manufacturer'); ?></th>
@@ -613,25 +657,157 @@ function printYesNo($value) {
                         <td><?php echo h(getRefValue('purlin_paint', $steel['wall_purlin_paint'])); ?></td>
                     </tr>
                 </table>
+
+                <!-- 花纹钢板 -->
+                <div class="subsection-title"><span class="subsection-number">F.7</span> <?php echo printLabel('花纹钢板', 'Checkered Plate'); ?></div>
+                <?php if (!empty($steel['checkered_plate_paint']) || !empty($steel['checkered_plate_scope'])): ?>
+                <table class="print-table">
+                    <tr>
+                        <th><?php echo printLabel('油漆类型', 'Paint Type'); ?></th>
+                        <td><?php echo printRefValue('checkered_plate', $steel['checkered_plate_paint'] ?? null); ?></td>
+                        <th><?php echo printLabel('范围', 'Scope'); ?></th>
+                        <td><?php echo printValue($steel['checkered_plate_scope'] ?? null); ?></td>
+                    </tr>
+                    <?php if (!empty($steel['checkered_plate_remarks'])): ?>
+                    <tr>
+                        <th><?php echo printLabel('备注', 'Remarks'); ?></th>
+                        <td colspan="3"><?php echo h($steel['checkered_plate_remarks']); ?></td>
+                    </tr>
+                    <?php endif; ?>
+                </table>
+                <?php else: ?>
+                <div class="info-value" style="color: #999;">N/A</div>
+                <?php endif; ?>
+
+                <!-- 其他要求 -->
+                <?php if (!empty($steel['other_requirements'])): ?>
+                <div class="subsection-title"><?php echo printLabel('其他要求', 'Other Requirements'); ?></div>
+                <div class="info-value" style="padding: 5px 10px; background: #f9f9f9; border-radius: 4px;">
+                    <?php echo nl2br(h($steel['other_requirements'])); ?>
+                </div>
+                <?php endif; ?>
             </div>
         </div>
 
-        <!-- 围护系统 -->
+        <!-- 做法说明 G -->
+        <?php
+        $roofMethods = array_values(array_filter($methods, fn($m) => ($m['method_category'] ?? '') === 'roof'));
+        $wallMethods = array_values(array_filter($methods, fn($m) => ($m['method_category'] ?? '') === 'wall'));
+        ?>
         <div class="print-section">
-            <div class="print-section-header"><?php echo printLabel('围护系统', 'Envelope System'); ?></div>
+            <div class="print-section-header"><span class="section-number">G.</span> <?php echo printLabel('屋墙面做法说明', 'Construction Method'); ?></div>
             <div class="print-section-body">
-                <!-- 材料配置 -->
+                <!-- G.1 屋面做法 -->
+                <div class="subsection-title"><span class="subsection-number">G.1</span> <?php echo printLabel('屋面做法', 'Roof Method'); ?></div>
+                <?php if (!empty($roofMethods)): ?>
                 <table class="print-table">
                     <tr>
-                        <th><?php echo printLabel('屋墙面材料', 'Wall Material'); ?></th>
-                        <td><?php echo h(getRefValue('wall_material', $envelope['wall_material'])); ?></td>
-                        <th><?php echo printLabel('内衬板布置', 'Liner Layout'); ?></th>
-                        <td><?php echo h(getRefValue('liner_layout', $envelope['roof_liner_layout'])); ?></td>
+                        <th style="width:15%;"><?php echo printLabel('项目', 'Item'); ?></th>
+                        <th style="width:50%;"><?php echo printLabel('做法描述', 'Method Description'); ?></th>
+                        <th style="width:35%;"><?php echo printLabel('范围', 'Scope'); ?></th>
+                    </tr>
+                    <?php foreach ($roofMethods as $idx => $m): ?>
+                    <tr>
+                        <td><?php echo printLabel('屋面做法', 'Roof Method'); ?> <?php echo ($idx + 1); ?></td>
+                        <td><?php echo h($m['method_desc'] ?: 'N/A'); ?></td>
+                        <td><?php echo printValue($m['scope'] ?? null); ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </table>
+                <?php else: ?>
+                <div class="info-value" style="color: #999;">N/A</div>
+                <?php endif; ?>
+
+                <!-- G.2 墙面做法 -->
+                <div class="subsection-title"><span class="subsection-number">G.2</span> <?php echo printLabel('墙面做法', 'Wall Method'); ?></div>
+                <?php if (!empty($wallMethods)): ?>
+                <table class="print-table">
+                    <tr>
+                        <th style="width:15%;"><?php echo printLabel('项目', 'Item'); ?></th>
+                        <th style="width:50%;"><?php echo printLabel('做法描述', 'Method Description'); ?></th>
+                        <th style="width:35%;"><?php echo printLabel('范围', 'Scope'); ?></th>
+                    </tr>
+                    <?php foreach ($wallMethods as $idx => $m): ?>
+                    <tr>
+                        <td><?php echo printLabel('墙面做法', 'Wall Method'); ?> <?php echo ($idx + 1); ?></td>
+                        <td><?php echo h($m['method_desc'] ?: 'N/A'); ?></td>
+                        <td><?php echo printValue($m['scope'] ?? null); ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </table>
+                <?php else: ?>
+                <div class="info-value" style="color: #999;">N/A</div>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- 围护系统配置 H -->
+        <div class="print-section">
+            <div class="print-section-header"><span class="section-number">H.</span> <?php echo printLabel('围护系统配置', 'Envelope Configuration'); ?></div>
+            <div class="print-section-body">
+                <!-- H.1 屋墙面材料 -->
+                <div class="subsection-title"><span class="subsection-number">H.1</span> <?php echo printLabel('屋墙面材料', 'Material Configuration'); ?></div>
+                <table class="print-table">
+                    <tr>
+                        <th><?php echo printLabel('材料类型', 'Material Type'); ?></th>
+                        <td><?php echo printRefValue('wall_material', $envelope['wall_material'] ?? null); ?></td>
+                        <th><?php echo printLabel('备注', 'Remarks'); ?></th>
+                        <td><?php echo printValue($envelope['material_remarks'] ?? null); ?></td>
                     </tr>
                 </table>
 
-                <!-- 屋面配置 -->
-                <div class="subsection-title"><?php echo printLabel('屋面配置', 'Roof Configuration'); ?></div>
+                <!-- H.2 改造项目 -->
+                <div class="subsection-title"><span class="subsection-number">H.2</span> <?php echo printLabel('改造项目', 'Renovation'); ?></div>
+                <table class="print-table">
+                    <tr>
+                        <th><?php echo printLabel('改造项目', 'Is Renovation'); ?></th>
+                        <td><?php echo printYesNo($envelope['is_renovation'] ?? null); ?></td>
+                        <th colspan="2"></th>
+                    </tr>
+                </table>
+                <?php if (!empty($envelope['is_renovation'])): ?>
+                <div class="checkbox-list">
+                    <div class="checkbox-item <?php echo ($envelope['structural_reinforcement'] ?? 0) ? 'checked' : 'unchecked'; ?>">
+                        <?php echo printLabel('结构加固', 'Structural Reinforcement'); ?>
+                    </div>
+                    <div class="checkbox-item <?php echo ($envelope['cladding_addition'] ?? 0) ? 'checked' : 'unchecked'; ?>">
+                        <?php echo printLabel('围护板加建', 'Cladding Addition'); ?>
+                    </div>
+                    <div class="checkbox-item <?php echo ($envelope['reuse'] ?? 0) ? 'checked' : 'unchecked'; ?>">
+                        <?php echo printLabel('利旧', 'Reuse'); ?>
+                    </div>
+                    <div class="checkbox-item <?php echo ($envelope['mep_installation'] ?? 0) ? 'checked' : 'unchecked'; ?>">
+                        <?php echo printLabel('机电安装', 'MEP Installation'); ?>
+                    </div>
+                    <div class="checkbox-item <?php echo ($envelope['renovation_other'] ?? 0) ? 'checked' : 'unchecked'; ?>">
+                        <?php echo printLabel('其他', 'Other'); ?>
+                    </div>
+                </div>
+                <?php if (!empty($envelope['renovation_remarks'])): ?>
+                <table class="print-table">
+                    <tr>
+                        <th><?php echo printLabel('备注', 'Remarks'); ?></th>
+                        <td colspan="3"><?php echo h($envelope['renovation_remarks']); ?></td>
+                    </tr>
+                </table>
+                <?php endif; ?>
+                <?php endif; ?>
+
+                <!-- H.3 防水规范 (隐藏GB字段，只显示备注) -->
+                <div class="subsection-title"><span class="subsection-number">H.3</span> <?php echo printLabel('防水规范', 'Waterproof Standard'); ?></div>
+                <?php if (!empty($envelope['waterproof_remarks'])): ?>
+                <table class="print-table">
+                    <tr>
+                        <th><?php echo printLabel('备注', 'Remarks'); ?></th>
+                        <td colspan="3"><?php echo h($envelope['waterproof_remarks']); ?></td>
+                    </tr>
+                </table>
+                <?php else: ?>
+                <div class="info-value" style="color: #999;">N/A</div>
+                <?php endif; ?>
+
+                <!-- H.4 屋面特殊配置 -->
+                <div class="subsection-title"><span class="subsection-number">H.4</span> <?php echo printLabel('屋面特殊配置', 'Roof Special Configuration'); ?></div>
                 <div class="checkbox-list">
                     <div class="checkbox-item <?php echo ($envelope['aclok_roof'] ?? 0) ? 'checked' : 'unchecked'; ?>">
                         <?php echo printLabel('Aclok铝镁锰屋面板', 'Aclok Roof Panel'); ?>
@@ -655,26 +831,274 @@ function printYesNo($value) {
                         <?php echo printLabel('LS585光伏系统', 'LS585 PV System'); ?>
                     </div>
                 </div>
+                <?php
+                // H.4 备注字段
+                $h4HasRemarks = !empty($envelope['sandwich_remarks']) || !empty($envelope['ventilator_requirements'])
+                    || !empty($envelope['skylight_requirements']) || !empty($envelope['roof_ridge_lantern_remarks'])
+                    || !empty($envelope['pv_requirements']);
+                if ($h4HasRemarks):
+                ?>
+                <table class="print-table" style="margin-top: 8px;">
+                    <?php if (!empty($envelope['sandwich_remarks'])): ?>
+                    <tr>
+                        <th style="width:25%;"><?php echo printLabel('夹芯板备注', 'Sandwich Panel Remarks'); ?></th>
+                        <td colspan="3"><?php echo h($envelope['sandwich_remarks']); ?></td>
+                    </tr>
+                    <?php endif; ?>
+                    <?php if (!empty($envelope['ventilator_requirements'])): ?>
+                    <tr>
+                        <th><?php echo printLabel('通风器/开口要求', 'Ventilator/Opening Requirements'); ?></th>
+                        <td colspan="3"><?php echo h($envelope['ventilator_requirements']); ?></td>
+                    </tr>
+                    <?php endif; ?>
+                    <?php if (!empty($envelope['skylight_requirements'])): ?>
+                    <tr>
+                        <th><?php echo printLabel('气楼/天窗要求', 'Skylight/Monitor Requirements'); ?></th>
+                        <td colspan="3"><?php echo h($envelope['skylight_requirements']); ?></td>
+                    </tr>
+                    <?php endif; ?>
+                    <?php if (!empty($envelope['roof_ridge_lantern_remarks'])): ?>
+                    <tr>
+                        <th><?php echo printLabel('屋脊气楼备注', 'Ridge Lantern Remarks'); ?></th>
+                        <td colspan="3"><?php echo h($envelope['roof_ridge_lantern_remarks']); ?></td>
+                    </tr>
+                    <?php endif; ?>
+                    <?php if (!empty($envelope['pv_requirements'])): ?>
+                    <tr>
+                        <th><?php echo printLabel('其他要求', 'Other Requirements'); ?></th>
+                        <td colspan="3"><?php echo h($envelope['pv_requirements']); ?></td>
+                    </tr>
+                    <?php endif; ?>
+                </table>
+                <?php endif; ?>
+            </div>
+        </div>
 
-                <!-- 墙面配置 -->
-                <div class="subsection-title"><?php echo printLabel('墙面配置', 'Wall Configuration'); ?></div>
+        <!-- 屋面系统材质要求 -->
+        <?php
+        $roofPanels = array_values(array_filter($panels, fn($p) => ($p['panel_category'] ?? '') === 'roof'));
+        $roofOuterPanels = array_values(array_filter($roofPanels, fn($p) => ($p['panel_type'] ?? '') === 'outer'));
+        $roofLinerPanels = array_values(array_filter($roofPanels, fn($p) => ($p['panel_type'] ?? '') === 'liner'));
+        $canopyPanels = array_values(array_filter($roofPanels, fn($p) => in_array($p['panel_type'] ?? '', ['canopy_upper', 'canopy_lower'])));
+        $roofInsulations = array_values(array_filter($insulations, fn($i) => ($i['insulation_category'] ?? '') === 'roof'));
+        $roofDrainages = array_values(array_filter($drainages, fn($d) => in_array($d['drainage_type'] ?? '', ['roof_1', 'roof_2', 'canopy'])));
+        ?>
+        <div class="print-section">
+            <div class="print-section-header"><span class="section-number">I.</span> <?php echo printLabel('屋面系统材质要求', 'Roof Material Requirements'); ?></div>
+            <div class="print-section-body">
+                <!-- I.1 屋面排水系统 -->
+                <div class="subsection-title"><span class="subsection-number">I.1</span> <?php echo printLabel('屋面排水系统', 'Roof Drainage System'); ?></div>
+                <?php if (!empty($roofDrainages)): ?>
                 <table class="print-table">
                     <tr>
-                        <th><?php echo printLabel('墙面外板铺设', 'Outer Wall Layout'); ?></th>
-                        <td><?php echo h(getRefValue('wall_panel_layout', $envelope['wall_outer_layout'])); ?></td>
-                        <th><?php echo printLabel('外板墙裙高度', 'Outer Curb Height'); ?></th>
-                        <td><?php echo h($envelope['wall_outer_curb_height']); ?> m</td>
+                        <th><?php echo printLabel('项目', 'Item'); ?></th>
+                        <th><?php echo printLabel('类型', 'Type'); ?></th>
+                        <th><?php echo printLabel('排水方式', 'Method'); ?></th>
+                        <th><?php echo printLabel('范围', 'Scope'); ?></th>
+                        <th><?php echo printLabel('天沟规格', 'Gutter Spec'); ?></th>
+                        <th><?php echo printLabel('落水管', 'Downspout'); ?></th>
+                    </tr>
+                    <?php foreach ($roofDrainages as $idx => $d): ?>
+                    <tr>
+                        <td><?php echo printLabel('排水', 'Drainage'); ?> <?php echo ($idx + 1); ?></td>
+                        <td><?php
+                            $dtype = $d['drainage_type'] ?? 'roof_1';
+                            if ($dtype === 'canopy') {
+                                echo printLabel('雨蓬', 'Canopy');
+                            } elseif ($dtype === 'roof_1') {
+                                echo printLabel('屋面1', 'Roof 1');
+                            } elseif ($dtype === 'roof_2') {
+                                echo printLabel('屋面2', 'Roof 2');
+                            } else {
+                                echo printLabel('屋面', 'Roof');
+                            }
+                        ?></td>
+                        <td><?php echo h(getRefValue('drainage_method', $d['method']) ?: $d['method']); ?></td>
+                        <td><?php echo h($d['scope']); ?></td>
+                        <td><?php echo h($d['gutter_spec']); ?></td>
+                        <td><?php echo h(getRefValue('downpipe_type', $d['downpipe_type']) ?: $d['downpipe_type']); ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </table>
+                <?php else: ?>
+                <div class="info-value" style="color: #999;">N/A</div>
+                <?php endif; ?>
+
+                <!-- I.2 屋面外板 -->
+                <div class="subsection-title"><span class="subsection-number">I.2</span> <?php echo printLabel('屋面外板', 'Roof Outer Panel'); ?></div>
+                <?php if (!empty($roofOuterPanels)): ?>
+                <table class="print-table" style="font-size: 9px;">
+                    <tr>
+                        <th><?php echo printLabel('项目', 'Item'); ?></th>
+                        <th><?php echo printLabel('厚度', 'Thickness'); ?></th>
+                        <th><?php echo printLabel('板型', 'Profile'); ?></th>
+                        <th><?php echo printLabel('强度', 'Strength'); ?></th>
+                        <th><?php echo printLabel('涂层', 'Coating'); ?></th>
+                        <th><?php echo printLabel('镀层', 'Galvanizing'); ?></th>
+                        <th><?php echo printLabel('颜色', 'Color'); ?></th>
+                        <th><?php echo printLabel('产地', 'Origin'); ?></th>
+                    </tr>
+                    <?php foreach ($roofOuterPanels as $idx => $p): ?>
+                    <tr>
+                        <td><?php echo printLabel('外板', 'Outer'); ?> <?php echo ($idx + 1); ?></td>
+                        <td><?php echo $p['thickness'] ? h($p['thickness']) . 'mm' : ''; ?></td>
+                        <td><?php echo h(getRefValue('panel_profile_roof', $p['profile']) ?: $p['profile']); ?></td>
+                        <td><?php echo h(getRefValue('panel_strength', $p['strength']) ?: $p['strength']); ?></td>
+                        <td><?php echo h(getRefValue('panel_coating', $p['coating']) ?: $p['coating']); ?></td>
+                        <td><?php echo h(getRefValue('panel_galvanizing', $p['galvanizing']) ?: $p['galvanizing']); ?></td>
+                        <td><?php echo h(getRefValue('panel_color', $p['color']) ?: $p['color']); ?></td>
+                        <td><?php echo h(getRefValue('panel_origin', $p['origin']) ?: $p['origin']); ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </table>
+                <?php else: ?>
+                <div class="info-value" style="color: #999;">N/A</div>
+                <?php endif; ?>
+
+                <!-- I.3 屋面保温棉 -->
+                <div class="subsection-title"><span class="subsection-number">I.3</span> <?php echo printLabel('屋面保温棉', 'Roof Insulation'); ?></div>
+                <?php if (!empty($roofInsulations)): ?>
+                <table class="print-table" style="font-size: 9px;">
+                    <tr>
+                        <th><?php echo printLabel('项目', 'Item'); ?></th>
+                        <th><?php echo printLabel('厚度', 'Thickness'); ?></th>
+                        <th><?php echo printLabel('容重', 'Density'); ?></th>
+                        <th><?php echo printLabel('贴面', 'Facing'); ?></th>
+                        <th><?php echo printLabel('阻燃', 'Flame'); ?></th>
+                        <th><?php echo printLabel('颜色', 'Color'); ?></th>
+                        <th><?php echo printLabel('品牌', 'Brand'); ?></th>
+                        <th><?php echo printLabel('其他', 'Other'); ?></th>
+                    </tr>
+                    <?php foreach ($roofInsulations as $idx => $i): ?>
+                    <tr>
+                        <td><?php echo printLabel('屋面保温', 'Roof Insul.'); ?> <?php echo ($idx + 1); ?></td>
+                        <td><?php echo $i['thickness'] ? h($i['thickness']) . 'mm' : ''; ?></td>
+                        <td><?php echo $i['density'] ? h($i['density']) . 'kg/m³' : ''; ?></td>
+                        <td><?php echo h(getRefValue('insulation_facing', $i['facing']) ?: $i['facing']); ?></td>
+                        <td><?php echo h(getRefValue('flame_retardant', $i['flame_retardant']) ?: $i['flame_retardant']); ?></td>
+                        <td><?php echo h(getRefValue('insulation_color', $i['color']) ?: $i['color']); ?></td>
+                        <td><?php echo h(getRefValue('insulation_brand', $i['brand']) ?: $i['brand']); ?></td>
+                        <td><?php echo h($i['other_requirements']); ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </table>
+                <?php else: ?>
+                <div class="info-value" style="color: #999;">N/A</div>
+                <?php endif; ?>
+
+                <!-- I.4 防水透气膜/隔汽膜/钢丝网 -->
+                <div class="subsection-title"><span class="subsection-number">I.4</span> <?php echo printLabel('防水透气膜/隔汽膜/钢丝网', 'Membrane & Wire Mesh'); ?></div>
+                <?php if (!empty($envelope['roof_waterproof_membrane']) || !empty($envelope['roof_vapor_barrier']) || !empty($envelope['roof_wire_mesh'])): ?>
+                <table class="print-table">
+                    <tr>
+                        <th><?php echo printLabel('防水透气膜', 'Waterproof Membrane'); ?></th>
+                        <td><?php echo printYesNo($envelope['roof_waterproof_membrane'] ?? null); ?></td>
+                        <th><?php echo printLabel('材料要求', 'Material Req.'); ?></th>
+                        <td><?php echo h($envelope['roof_waterproof_material'] ?? ''); ?></td>
                     </tr>
                     <tr>
-                        <th><?php echo printLabel('墙面内板铺设', 'Liner Wall Layout'); ?></th>
-                        <td><?php echo h(getRefValue('wall_panel_layout', $envelope['wall_liner_layout'])); ?></td>
-                        <th><?php echo printLabel('内板墙裙高度', 'Liner Curb Height'); ?></th>
-                        <td><?php echo h($envelope['wall_liner_curb_height']); ?> m</td>
+                        <th><?php echo printLabel('隔汽膜', 'Vapor Barrier'); ?></th>
+                        <td><?php echo printYesNo($envelope['roof_vapor_barrier'] ?? null); ?></td>
+                        <th><?php echo printLabel('隔汽膜材料', 'Vapor Material'); ?></th>
+                        <td><?php echo h($envelope['roof_vapor_material'] ?? ''); ?></td>
+                    </tr>
+                    <tr>
+                        <th><?php echo printLabel('钢丝网', 'Wire Mesh'); ?></th>
+                        <td><?php echo h(getRefValue('wire_mesh', $envelope['roof_wire_mesh']) ?: $envelope['roof_wire_mesh']); ?></td>
+                        <th><?php echo printLabel('钢丝网材料', 'Wire Mesh Material'); ?></th>
+                        <td><?php echo h($envelope['roof_wire_mesh_material'] ?? ''); ?></td>
                     </tr>
                 </table>
+                <?php else: ?>
+                <div class="info-value" style="color: #999;">N/A</div>
+                <?php endif; ?>
 
-                <!-- 小雨蓬配置 -->
-                <div class="subsection-title"><?php echo printLabel('小雨蓬', 'Small Canopy'); ?></div>
+                <!-- I.5 屋面内衬板 -->
+                <div class="subsection-title"><span class="subsection-number">I.5</span> <?php echo printLabel('屋面内衬板', 'Roof Liner Panel'); ?></div>
+                <?php if (!empty($roofLinerPanels)): ?>
+                <table class="print-table" style="font-size: 9px;">
+                    <tr>
+                        <th><?php echo printLabel('项目', 'Item'); ?></th>
+                        <th><?php echo printLabel('厚度', 'Thickness'); ?></th>
+                        <th><?php echo printLabel('板型', 'Profile'); ?></th>
+                        <th><?php echo printLabel('强度', 'Strength'); ?></th>
+                        <th><?php echo printLabel('涂层', 'Coating'); ?></th>
+                        <th><?php echo printLabel('镀层', 'Galvanizing'); ?></th>
+                        <th><?php echo printLabel('颜色', 'Color'); ?></th>
+                        <th><?php echo printLabel('产地', 'Origin'); ?></th>
+                    </tr>
+                    <?php foreach ($roofLinerPanels as $idx => $p): ?>
+                    <tr>
+                        <td><?php echo printLabel('内衬板', 'Liner'); ?> <?php echo ($idx + 1); ?></td>
+                        <td><?php echo $p['thickness'] ? h($p['thickness']) . 'mm' : ''; ?></td>
+                        <td><?php echo h(getRefValue('panel_profile_liner', $p['profile']) ?: $p['profile']); ?></td>
+                        <td><?php echo h(getRefValue('panel_strength', $p['strength']) ?: $p['strength']); ?></td>
+                        <td><?php echo h(getRefValue('panel_coating', $p['coating']) ?: $p['coating']); ?></td>
+                        <td><?php echo h(getRefValue('panel_galvanizing', $p['galvanizing']) ?: $p['galvanizing']); ?></td>
+                        <td><?php echo h(getRefValue('panel_color', $p['color']) ?: $p['color']); ?></td>
+                        <td><?php echo h(getRefValue('panel_origin', $p['origin']) ?: $p['origin']); ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </table>
+                <?php endif; ?>
+                <?php if (!empty($envelope['roof_liner_layout']) || !empty($envelope['roof_liner_remarks'])): ?>
+                <table class="print-table" style="margin-top: 4px;">
+                    <tr>
+                        <th style="width:25%;"><?php echo printLabel('内衬板铺设', 'Liner Layout'); ?></th>
+                        <td><?php echo h(getRefValue('liner_layout', $envelope['roof_liner_layout']) ?: $envelope['roof_liner_layout']); ?></td>
+                        <th style="width:15%;"><?php echo printLabel('备注', 'Remarks'); ?></th>
+                        <td><?php echo h($envelope['roof_liner_remarks'] ?? ''); ?></td>
+                    </tr>
+                </table>
+                <?php endif; ?>
+                <?php if (empty($roofLinerPanels) && empty($envelope['roof_liner_layout']) && empty($envelope['roof_liner_remarks'])): ?>
+                <div class="info-value" style="color: #999;">N/A</div>
+                <?php endif; ?>
+
+                <!-- I.6 大雨蓬板 -->
+                <div class="subsection-title"><span class="subsection-number">I.6</span> <?php echo printLabel('大雨蓬板', 'Loading Canopy Panel'); ?></div>
+                <?php if (!empty($canopyPanels)): ?>
+                <table class="print-table" style="font-size: 9px;">
+                    <tr>
+                        <th><?php echo printLabel('项目', 'Item'); ?></th>
+                        <th><?php echo printLabel('厚度', 'Thickness'); ?></th>
+                        <th><?php echo printLabel('板型', 'Profile'); ?></th>
+                        <th><?php echo printLabel('强度', 'Strength'); ?></th>
+                        <th><?php echo printLabel('涂层', 'Coating'); ?></th>
+                        <th><?php echo printLabel('镀层', 'Galvanizing'); ?></th>
+                        <th><?php echo printLabel('颜色', 'Color'); ?></th>
+                        <th><?php echo printLabel('产地', 'Origin'); ?></th>
+                    </tr>
+                    <?php foreach ($canopyPanels as $p): ?>
+                    <tr>
+                        <td><?php echo $p['panel_type'] === 'canopy_upper' ? printLabel('雨蓬上板', 'Canopy Upper') : printLabel('雨蓬下板', 'Canopy Lower'); ?></td>
+                        <td><?php echo $p['thickness'] ? h($p['thickness']) . 'mm' : ''; ?></td>
+                        <td><?php echo h(getRefValue('panel_profile_roof', $p['profile']) ?: $p['profile']); ?></td>
+                        <td><?php echo h(getRefValue('panel_strength', $p['strength']) ?: $p['strength']); ?></td>
+                        <td><?php echo h(getRefValue('panel_coating', $p['coating']) ?: $p['coating']); ?></td>
+                        <td><?php echo h(getRefValue('panel_galvanizing', $p['galvanizing']) ?: $p['galvanizing']); ?></td>
+                        <td><?php echo h(getRefValue('panel_color', $p['color']) ?: $p['color']); ?></td>
+                        <td><?php echo h(getRefValue('panel_origin', $p['origin']) ?: $p['origin']); ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </table>
+                <?php endif; ?>
+                <?php if (isset($envelope['canopy_has_insulation']) || !empty($envelope['canopy_insulation_remarks'])): ?>
+                <table class="print-table" style="margin-top: 4px;">
+                    <tr>
+                        <th style="width:25%;"><?php echo printLabel('雨蓬保温', 'Canopy Insulation'); ?></th>
+                        <td><?php echo printYesNo($envelope['canopy_has_insulation'] ?? null); ?></td>
+                        <th style="width:15%;"><?php echo printLabel('备注', 'Remarks'); ?></th>
+                        <td><?php echo h($envelope['canopy_insulation_remarks'] ?? ''); ?></td>
+                    </tr>
+                </table>
+                <?php endif; ?>
+                <?php if (empty($canopyPanels) && !isset($envelope['canopy_has_insulation']) && empty($envelope['canopy_insulation_remarks'])): ?>
+                <div class="info-value" style="color: #999;">N/A</div>
+                <?php endif; ?>
+
+                <!-- I.7 标准小雨蓬 -->
+                <div class="subsection-title"><span class="subsection-number">I.7</span> <?php echo printLabel('标准小雨蓬', 'Small Canopy'); ?></div>
                 <table class="print-table">
                     <tr>
                         <th><?php echo printLabel('悬挑宽度', 'Canopy Width'); ?></th>
@@ -685,12 +1109,13 @@ function printYesNo($value) {
                     <tr>
                         <th><?php echo printLabel('排水做法', 'Drainage Method'); ?></th>
                         <td><?php echo h(getRefValue('canopy_drainage', $envelope['small_canopy_drainage'])); ?></td>
-                        <th colspan="2"></th>
+                        <th><?php echo printLabel('备注', 'Remarks'); ?></th>
+                        <td><?php echo h($envelope['small_canopy_remarks'] ?? ''); ?></td>
                     </tr>
                 </table>
 
-                <!-- 采光板配置 -->
-                <div class="subsection-title"><?php echo printLabel('采光板', 'Skylight Panel'); ?></div>
+                <!-- I.8 屋面采光 -->
+                <div class="subsection-title"><span class="subsection-number">I.8</span> <?php echo printLabel('屋面采光', 'Roof Skylight'); ?></div>
                 <table class="print-table">
                     <tr>
                         <th><?php echo printLabel('铺设方式', 'Layout'); ?></th>
@@ -709,14 +1134,246 @@ function printYesNo($value) {
                         <td><?php echo printYesNo($envelope['skylight_fm_certified'] ?? null); ?></td>
                         <th colspan="2"></th>
                     </tr>
+                    <?php if (!empty($envelope['skylight_other_requirements'])): ?>
+                    <tr>
+                        <th><?php echo printLabel('其他要求', 'Other Requirements'); ?></th>
+                        <td colspan="3"><?php echo h($envelope['skylight_other_requirements']); ?></td>
+                    </tr>
+                    <?php endif; ?>
                 </table>
+
+                <!-- I.9 其他屋面材料 -->
+                <div class="subsection-title"><span class="subsection-number">I.9</span> <?php echo printLabel('其他屋面材料', 'Other Roof Materials'); ?></div>
+                <?php if (!empty($envelope['rock_wool_panel']) || !empty($envelope['flexible_roof']) || !empty($envelope['envelope_other'])): ?>
+                <table class="print-table">
+                    <tr>
+                        <th><?php echo printLabel('岩棉板', 'Rockwool Panel'); ?></th>
+                        <td><?php echo printValue($envelope['rock_wool_panel'] ?? null); ?></td>
+                        <th><?php echo printLabel('柔性屋面', 'Flexible Roof'); ?></th>
+                        <td><?php echo printValue($envelope['flexible_roof'] ?? null); ?></td>
+                    </tr>
+                    <?php if (!empty($envelope['envelope_other'])): ?>
+                    <tr>
+                        <th><?php echo printLabel('其他', 'Other'); ?></th>
+                        <td colspan="3"><?php echo h($envelope['envelope_other']); ?></td>
+                    </tr>
+                    <?php endif; ?>
+                </table>
+                <?php else: ?>
+                <div class="info-value" style="color: #999;">N/A</div>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- 墙面系统材质要求 -->
+        <?php
+        $wallPanels = array_values(array_filter($panels, fn($p) => ($p['panel_category'] ?? '') === 'wall'));
+        $wallOuterPanels = array_values(array_filter($wallPanels, fn($p) => ($p['panel_type'] ?? '') === 'outer'));
+        $wallLinerPanels = array_values(array_filter($wallPanels, fn($p) => ($p['panel_type'] ?? '') === 'liner'));
+        $parapetLinerPanels = array_values(array_filter($wallPanels, fn($p) => ($p['panel_type'] ?? '') === 'parapet_liner'));
+        $partitionPanels = array_values(array_filter($wallPanels, fn($p) => ($p['panel_type'] ?? '') === 'partition'));
+        $wallInsulations = array_values(array_filter($insulations, fn($i) => ($i['insulation_category'] ?? '') === 'wall'));
+        ?>
+        <div class="print-section">
+            <div class="print-section-header"><span class="section-number">J.</span> <?php echo printLabel('墙面系统材质要求', 'Wall Material Requirements'); ?></div>
+            <div class="print-section-body">
+                <!-- J.1 墙面配置 -->
+                <div class="subsection-title"><span class="subsection-number">J.1</span> <?php echo printLabel('墙面配置', 'Wall Configuration'); ?></div>
+                <table class="print-table">
+                    <tr>
+                        <th><?php echo printLabel('墙面外板铺设', 'Outer Wall Layout'); ?></th>
+                        <td><?php echo printRefValue('wall_panel_layout', $envelope['wall_outer_layout'] ?? null); ?></td>
+                        <th><?php echo printLabel('外板墙裙高度', 'Outer Curb Height'); ?></th>
+                        <td><?php echo printValue($envelope['wall_outer_curb_height'] ?? null, 'm'); ?></td>
+                    </tr>
+                    <tr>
+                        <th><?php echo printLabel('墙面内板铺设', 'Liner Wall Layout'); ?></th>
+                        <td><?php echo printRefValue('wall_panel_layout', $envelope['wall_liner_layout'] ?? null); ?></td>
+                        <th><?php echo printLabel('内板墙裙高度', 'Liner Curb Height'); ?></th>
+                        <td><?php echo printValue($envelope['wall_liner_curb_height'] ?? null, 'm'); ?></td>
+                    </tr>
+                </table>
+
+                <!-- J.2 墙面外板 -->
+                <div class="subsection-title"><span class="subsection-number">J.2</span> <?php echo printLabel('墙面外板', 'Wall Outer Panel'); ?></div>
+                <?php if (!empty($wallOuterPanels)): ?>
+                <table class="print-table" style="font-size: 9px;">
+                    <tr>
+                        <th><?php echo printLabel('项目', 'Item'); ?></th>
+                        <th><?php echo printLabel('厚度', 'Thickness'); ?></th>
+                        <th><?php echo printLabel('板型', 'Profile'); ?></th>
+                        <th><?php echo printLabel('强度', 'Strength'); ?></th>
+                        <th><?php echo printLabel('涂层', 'Coating'); ?></th>
+                        <th><?php echo printLabel('镀层', 'Galvanizing'); ?></th>
+                        <th><?php echo printLabel('颜色', 'Color'); ?></th>
+                        <th><?php echo printLabel('产地', 'Origin'); ?></th>
+                    </tr>
+                    <?php foreach ($wallOuterPanels as $idx => $p): ?>
+                    <tr>
+                        <td><?php echo printLabel('外板', 'Outer'); ?> <?php echo ($idx + 1); ?></td>
+                        <td><?php echo $p['thickness'] ? h($p['thickness']) . 'mm' : ''; ?></td>
+                        <td><?php echo h(getRefValue('panel_profile_wall', $p['profile']) ?: $p['profile']); ?></td>
+                        <td><?php echo h(getRefValue('panel_strength', $p['strength']) ?: $p['strength']); ?></td>
+                        <td><?php echo h(getRefValue('panel_coating', $p['coating']) ?: $p['coating']); ?></td>
+                        <td><?php echo h(getRefValue('panel_galvanizing', $p['galvanizing']) ?: $p['galvanizing']); ?></td>
+                        <td><?php echo h(getRefValue('panel_color', $p['color']) ?: $p['color']); ?></td>
+                        <td><?php echo h(getRefValue('panel_origin', $p['origin']) ?: $p['origin']); ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </table>
+                <?php else: ?>
+                <div class="info-value" style="color: #999;">N/A</div>
+                <?php endif; ?>
+
+                <!-- J.3 墙面保温棉 -->
+                <div class="subsection-title"><span class="subsection-number">J.3</span> <?php echo printLabel('墙面保温棉', 'Wall Insulation'); ?></div>
+                <?php if (!empty($wallInsulations)): ?>
+                <table class="print-table" style="font-size: 9px;">
+                    <tr>
+                        <th><?php echo printLabel('项目', 'Item'); ?></th>
+                        <th><?php echo printLabel('厚度', 'Thickness'); ?></th>
+                        <th><?php echo printLabel('容重', 'Density'); ?></th>
+                        <th><?php echo printLabel('贴面', 'Facing'); ?></th>
+                        <th><?php echo printLabel('阻燃', 'Flame'); ?></th>
+                        <th><?php echo printLabel('颜色', 'Color'); ?></th>
+                        <th><?php echo printLabel('品牌', 'Brand'); ?></th>
+                        <th><?php echo printLabel('其他', 'Other'); ?></th>
+                    </tr>
+                    <?php foreach ($wallInsulations as $idx => $i): ?>
+                    <tr>
+                        <td><?php echo printLabel('墙面保温', 'Wall Insul.'); ?> <?php echo ($idx + 1); ?></td>
+                        <td><?php echo $i['thickness'] ? h($i['thickness']) . 'mm' : ''; ?></td>
+                        <td><?php echo $i['density'] ? h($i['density']) . 'kg/m³' : ''; ?></td>
+                        <td><?php echo h(getRefValue('insulation_facing', $i['facing']) ?: $i['facing']); ?></td>
+                        <td><?php echo h(getRefValue('flame_retardant', $i['flame_retardant']) ?: $i['flame_retardant']); ?></td>
+                        <td><?php echo h(getRefValue('insulation_color', $i['color']) ?: $i['color']); ?></td>
+                        <td><?php echo h(getRefValue('insulation_brand', $i['brand']) ?: $i['brand']); ?></td>
+                        <td><?php echo h($i['other_requirements']); ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </table>
+                <?php else: ?>
+                <div class="info-value" style="color: #999;">N/A</div>
+                <?php endif; ?>
+
+                <!-- J.4 墙面防水透气膜/隔汽膜/钢丝网 -->
+                <div class="subsection-title"><span class="subsection-number">J.4</span> <?php echo printLabel('防水透气膜/隔汽膜/钢丝网', 'Wall Membrane & Wire Mesh'); ?></div>
+                <?php if (!empty($envelope['wall_waterproof_membrane']) || !empty($envelope['wall_vapor_barrier']) || !empty($envelope['wall_wire_mesh'])): ?>
+                <table class="print-table">
+                    <tr>
+                        <th><?php echo printLabel('防水透气膜', 'Waterproof Membrane'); ?></th>
+                        <td><?php echo printYesNo($envelope['wall_waterproof_membrane'] ?? null); ?></td>
+                        <th><?php echo printLabel('隔汽膜', 'Vapor Barrier'); ?></th>
+                        <td><?php echo printYesNo($envelope['wall_vapor_barrier'] ?? null); ?></td>
+                    </tr>
+                    <tr>
+                        <th><?php echo printLabel('钢丝网', 'Wire Mesh'); ?></th>
+                        <td colspan="3"><?php echo h(getRefValue('wire_mesh', $envelope['wall_wire_mesh']) ?: $envelope['wall_wire_mesh']); ?></td>
+                    </tr>
+                </table>
+                <?php else: ?>
+                <div class="info-value" style="color: #999;">N/A</div>
+                <?php endif; ?>
+
+                <!-- J.5 墙面内衬板 -->
+                <div class="subsection-title"><span class="subsection-number">J.5</span> <?php echo printLabel('墙面内衬板', 'Wall Liner Panel'); ?></div>
+                <?php if (!empty($wallLinerPanels)): ?>
+                <table class="print-table" style="font-size: 9px;">
+                    <tr>
+                        <th><?php echo printLabel('项目', 'Item'); ?></th>
+                        <th><?php echo printLabel('厚度', 'Thickness'); ?></th>
+                        <th><?php echo printLabel('板型', 'Profile'); ?></th>
+                        <th><?php echo printLabel('强度', 'Strength'); ?></th>
+                        <th><?php echo printLabel('涂层', 'Coating'); ?></th>
+                        <th><?php echo printLabel('镀层', 'Galvanizing'); ?></th>
+                        <th><?php echo printLabel('颜色', 'Color'); ?></th>
+                        <th><?php echo printLabel('产地', 'Origin'); ?></th>
+                    </tr>
+                    <?php foreach ($wallLinerPanels as $idx => $p): ?>
+                    <tr>
+                        <td><?php echo printLabel('内衬板', 'Liner'); ?> <?php echo ($idx + 1); ?></td>
+                        <td><?php echo $p['thickness'] ? h($p['thickness']) . 'mm' : ''; ?></td>
+                        <td><?php echo h(getRefValue('panel_profile_liner', $p['profile']) ?: $p['profile']); ?></td>
+                        <td><?php echo h(getRefValue('panel_strength', $p['strength']) ?: $p['strength']); ?></td>
+                        <td><?php echo h(getRefValue('panel_coating', $p['coating']) ?: $p['coating']); ?></td>
+                        <td><?php echo h(getRefValue('panel_galvanizing', $p['galvanizing']) ?: $p['galvanizing']); ?></td>
+                        <td><?php echo h(getRefValue('panel_color', $p['color']) ?: $p['color']); ?></td>
+                        <td><?php echo h(getRefValue('panel_origin', $p['origin']) ?: $p['origin']); ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </table>
+                <?php else: ?>
+                <div class="info-value" style="color: #999;">N/A</div>
+                <?php endif; ?>
+
+                <!-- J.6 女儿墙内衬板 -->
+                <div class="subsection-title"><span class="subsection-number">J.6</span> <?php echo printLabel('女儿墙内衬板', 'Parapet Liner Panel'); ?></div>
+                <?php if (!empty($parapetLinerPanels)): ?>
+                <table class="print-table" style="font-size: 9px;">
+                    <tr>
+                        <th><?php echo printLabel('项目', 'Item'); ?></th>
+                        <th><?php echo printLabel('厚度', 'Thickness'); ?></th>
+                        <th><?php echo printLabel('板型', 'Profile'); ?></th>
+                        <th><?php echo printLabel('强度', 'Strength'); ?></th>
+                        <th><?php echo printLabel('涂层', 'Coating'); ?></th>
+                        <th><?php echo printLabel('镀层', 'Galvanizing'); ?></th>
+                        <th><?php echo printLabel('颜色', 'Color'); ?></th>
+                        <th><?php echo printLabel('产地', 'Origin'); ?></th>
+                    </tr>
+                    <?php foreach ($parapetLinerPanels as $idx => $p): ?>
+                    <tr>
+                        <td><?php echo printLabel('女儿墙内衬', 'Parapet'); ?> <?php echo ($idx + 1); ?></td>
+                        <td><?php echo $p['thickness'] ? h($p['thickness']) . 'mm' : ''; ?></td>
+                        <td><?php echo h(getRefValue('panel_profile_wall', $p['profile']) ?: $p['profile']); ?></td>
+                        <td><?php echo h(getRefValue('panel_strength', $p['strength']) ?: $p['strength']); ?></td>
+                        <td><?php echo h(getRefValue('panel_coating', $p['coating']) ?: $p['coating']); ?></td>
+                        <td><?php echo h(getRefValue('panel_galvanizing', $p['galvanizing']) ?: $p['galvanizing']); ?></td>
+                        <td><?php echo h(getRefValue('panel_color', $p['color']) ?: $p['color']); ?></td>
+                        <td><?php echo h(getRefValue('panel_origin', $p['origin']) ?: $p['origin']); ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </table>
+                <?php else: ?>
+                <div class="info-value" style="color: #999;">N/A</div>
+                <?php endif; ?>
+
+                <!-- J.7 内隔墙墙面板 -->
+                <div class="subsection-title"><span class="subsection-number">J.7</span> <?php echo printLabel('内隔墙墙面板', 'Partition Wall Panel'); ?></div>
+                <?php if (!empty($partitionPanels)): ?>
+                <table class="print-table" style="font-size: 9px;">
+                    <tr>
+                        <th><?php echo printLabel('项目', 'Item'); ?></th>
+                        <th><?php echo printLabel('厚度', 'Thickness'); ?></th>
+                        <th><?php echo printLabel('板型', 'Profile'); ?></th>
+                        <th><?php echo printLabel('强度', 'Strength'); ?></th>
+                        <th><?php echo printLabel('涂层', 'Coating'); ?></th>
+                        <th><?php echo printLabel('镀层', 'Galvanizing'); ?></th>
+                        <th><?php echo printLabel('颜色', 'Color'); ?></th>
+                        <th><?php echo printLabel('产地', 'Origin'); ?></th>
+                    </tr>
+                    <?php foreach ($partitionPanels as $idx => $p): ?>
+                    <tr>
+                        <td><?php echo printLabel('内隔墙', 'Partition'); ?> <?php echo ($idx + 1); ?></td>
+                        <td><?php echo $p['thickness'] ? h($p['thickness']) . 'mm' : ''; ?></td>
+                        <td><?php echo h(getRefValue('panel_profile_liner', $p['profile']) ?: $p['profile']); ?></td>
+                        <td><?php echo h(getRefValue('panel_strength', $p['strength']) ?: $p['strength']); ?></td>
+                        <td><?php echo h(getRefValue('panel_coating', $p['coating']) ?: $p['coating']); ?></td>
+                        <td><?php echo h(getRefValue('panel_galvanizing', $p['galvanizing']) ?: $p['galvanizing']); ?></td>
+                        <td><?php echo h(getRefValue('panel_color', $p['color']) ?: $p['color']); ?></td>
+                        <td><?php echo h(getRefValue('panel_origin', $p['origin']) ?: $p['origin']); ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </table>
+                <?php else: ?>
+                <div class="info-value" style="color: #999;">N/A</div>
+                <?php endif; ?>
             </div>
         </div>
 
         <!-- V3.2: 板材规格明细 -->
         <?php if (!empty($claddingSpecs)): ?>
         <div class="print-section">
-            <div class="print-section-header"><?php echo printLabel('板材规格明细', 'Cladding Specification'); ?></div>
+            <div class="print-section-header"><span class="section-number">*</span> <?php echo printLabel('板材规格明细', 'Cladding Specification'); ?></div>
             <div class="print-section-body">
                 <table class="print-table">
                     <tr>
@@ -731,8 +1388,16 @@ function printYesNo($value) {
                         <th><?php echo printLabel('品牌', 'Brand'); ?></th>
                     </tr>
                     <?php
-                    $systemLabels = ['roof' => '屋面', 'wall' => '墙面', 'canopy' => '雨篷', 'parapet' => '女儿墙'];
-                    $layerLabels = ['outer' => '外板', 'liner' => '内衬', 'core' => '芯材'];
+                    $systemLabels = $lang === 'en' ? [
+                        'roof' => 'Roof', 'wall' => 'Wall', 'canopy' => 'Canopy', 'parapet' => 'Parapet'
+                    ] : [
+                        'roof' => '屋面', 'wall' => '墙面', 'canopy' => '雨篷', 'parapet' => '女儿墙'
+                    ];
+                    $layerLabels = $lang === 'en' ? [
+                        'outer' => 'Outer', 'liner' => 'Liner', 'core' => 'Core'
+                    ] : [
+                        'outer' => '外板', 'liner' => '内衬', 'core' => '芯材'
+                    ];
                     foreach ($claddingSpecs as $spec):
                     ?>
                     <tr>
@@ -743,8 +1408,8 @@ function printYesNo($value) {
                         <td><?php echo h(getRefValue('base_material', $spec['base_material']) ?: $spec['base_material']); ?></td>
                         <td><?php echo $spec['thickness'] ? h($spec['thickness']) . 'mm' : ''; ?></td>
                         <td><?php echo h(getRefValue('coating_type', $spec['coating_type']) ?: $spec['coating_type']); ?></td>
-                        <td><?php echo h(getRefValue('panel_color_ral', $spec['color_code']) ?: $spec['color_code']); ?></td>
-                        <td><?php echo h(getRefValue('panel_brand', $spec['brand']) ?: $spec['brand']); ?></td>
+                        <td><?php echo h(getRefValue('panel_color', $spec['color_code']) ?: $spec['color_code']); ?></td>
+                        <td><?php echo h(getRefValue('panel_origin', $spec['brand']) ?: $spec['brand']); ?></td>
                     </tr>
                     <?php endforeach; ?>
                 </table>
@@ -752,36 +1417,76 @@ function printYesNo($value) {
         </div>
         <?php endif; ?>
 
-        <!-- V3.2: 补充说明 -->
-        <?php if (!empty($supplements)): ?>
+        <!-- V3.2: 备注 Notes -->
         <div class="print-section">
-            <div class="print-section-header"><?php echo printLabel('补充说明', 'Supplements'); ?></div>
+            <div class="print-section-header"><span class="section-number">K.</span> <?php echo printLabel('备注', 'Notes'); ?></div>
             <div class="print-section-body">
+                <?php if (!empty($supplements)): ?>
                 <?php
-                $categoryLabels = [
-                    'general' => '通用', 'steel' => '钢结构', 'envelope' => '围护',
-                    'load' => '荷载', 'site' => '现场', 'schedule' => '进度',
-                    'commercial' => '商务', 'other' => '其他'
+                $importanceLabels = [
+                    'normal' => ['cn' => '普通', 'en' => 'Normal', 'icon' => ''],
+                    'important' => ['cn' => '重要', 'en' => 'Important', 'icon' => '⚠'],
+                    'critical' => ['cn' => '关键', 'en' => 'Critical', 'icon' => '‼']
                 ];
-                $importanceLabels = ['normal' => '', 'important' => '⚠ ', 'critical' => '‼ '];
+                $categoryLabels = [
+                    'general' => ['cn' => '通用', 'en' => 'General'],
+                    'steel' => ['cn' => '钢结构', 'en' => 'Steel'],
+                    'envelope' => ['cn' => '围护', 'en' => 'Envelope'],
+                    'load' => ['cn' => '荷载', 'en' => 'Load'],
+                    'site' => ['cn' => '现场', 'en' => 'Site'],
+                    'schedule' => ['cn' => '进度', 'en' => 'Schedule'],
+                    'commercial' => ['cn' => '商务', 'en' => 'Commercial'],
+                    'other' => ['cn' => '其他', 'en' => 'Other']
+                ];
+                $relatedLabels = [
+                    'basic' => ['cn' => '基本信息', 'en' => 'Basic Info'],
+                    'steel' => ['cn' => '钢结构', 'en' => 'Steel'],
+                    'envelope' => ['cn' => '围护系统', 'en' => 'Envelope'],
+                    'cladding' => ['cn' => '板材规格', 'en' => 'Cladding']
+                ];
+                $noteIndex = 0;
                 foreach ($supplements as $supp):
+                    $noteIndex++;
+                    $impKey = $supp['importance'] ?? 'normal';
+                    $catKey = $supp['category'] ?? 'general';
+                    $relKey = $supp['related_section'] ?? '';
                 ?>
-                <div class="info-row" style="border-bottom: 1px dotted #ccc; padding: 2px 0;">
-                    <div class="info-item" style="width: 15%;">
-                        <span class="info-label">[<?php echo h($categoryLabels[$supp['category']] ?? $supp['category']); ?>]</span>
+                <div style="border: 1px solid #ddd; margin-bottom: 6px; padding: 6px; background: #fafafa;">
+                    <div style="display: flex; gap: 10px; font-size: 9px; margin-bottom: 4px;">
+                        <span><strong>#<?php echo $noteIndex; ?></strong></span>
+                        <span><?php echo printLabel('类别', 'Category'); ?>: <?php echo $lang === 'en' ? ($categoryLabels[$catKey]['en'] ?? $catKey) : ($categoryLabels[$catKey]['cn'] ?? $catKey); ?></span>
+                        <span><?php echo printLabel('重要程度', 'Importance'); ?>: <?php echo ($importanceLabels[$impKey]['icon'] ?? '') . ' ' . ($lang === 'en' ? ($importanceLabels[$impKey]['en'] ?? $impKey) : ($importanceLabels[$impKey]['cn'] ?? $impKey)); ?></span>
+                        <?php if (!empty($relKey)): ?>
+                        <span><?php echo printLabel('关联区域', 'Related'); ?>: <?php echo $lang === 'en' ? ($relatedLabels[$relKey]['en'] ?? $relKey) : ($relatedLabels[$relKey]['cn'] ?? $relKey); ?></span>
+                        <?php endif; ?>
+                        <?php if (!empty($supp['sort_order']) && $supp['sort_order'] != '0'): ?>
+                        <span><?php echo printLabel('排序', 'Order'); ?>: <?php echo h($supp['sort_order']); ?></span>
+                        <?php endif; ?>
                     </div>
-                    <div class="info-item" style="width: 85%;">
-                        <span class="info-value">
-                            <?php echo h($importanceLabels[$supp['importance']] ?? ''); ?>
-                            <?php if ($supp['title']): ?><strong><?php echo h($supp['title']); ?>:</strong> <?php endif; ?>
-                            <?php echo h($supp['content']); ?>
-                        </span>
-                    </div>
+                    <?php if (!empty($supp['title'])): ?>
+                    <div style="font-weight: bold; margin-bottom: 2px;"><?php echo h($supp['title']); ?></div>
+                    <?php endif; ?>
+                    <div style="white-space: pre-wrap;"><?php echo h($supp['content']); ?></div>
                 </div>
                 <?php endforeach; ?>
+                <?php else: ?>
+                <div class="info-value" style="color: #999;">N/A</div>
+                <?php endif; ?>
             </div>
         </div>
-        <?php endif; ?>
+
+        <!-- 状态 -->
+        <div class="print-section">
+            <div class="print-section-header"><span class="section-number">L.</span> <?php echo printLabel('状态', 'Status'); ?></div>
+            <div class="print-section-body">
+                <div class="info-row">
+                    <div class="info-item">
+                        <span class="info-label"><?php echo printLabel('报价状态', 'RFQ Status'); ?>:</span>
+                        <span class="info-value"><?php echo h(getRefValue('rfq_status', $main['status'])); ?></span>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- 页脚 -->
         <div class="print-footer">

@@ -182,7 +182,7 @@ function localTranslate($sourceType, $value, $category) {
         '防水' => 'Waterproof',
         '排水' => 'Drainage',
         '天沟' => 'Gutter',
-        '落水管' => 'Downpipe',
+        '落水管' => 'Downspout',
         '采光' => 'Skylight',
         '天窗' => 'Skylight',
         '檩条' => 'Purlin',

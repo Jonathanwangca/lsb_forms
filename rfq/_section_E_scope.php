@@ -7,12 +7,12 @@
 <!-- ========== 报价范围 ========== -->
 <div class="form-section">
     <div class="form-section-header">
-        <i class="bi bi-list-check"></i> <?php echo sectionTitle('报价范围', 'Scope of Work'); ?>
+        <i class="bi bi-list-check"></i> <span class="section-number">E.</span> <?php echo sectionTitle('报价范围', 'Scope of Work'); ?>
     </div>
     <div class="form-section-body">
         <div class="row g-3 mb-3">
             <div class="col-md-4">
-                <label class="form-label"><?php echo fieldLabel('主次围材料', 'Main Material'); ?></label>
+                <label class="form-label"><?php echo fieldLabel('包含', 'Include'); ?></label>
                 <select class="form-select" name="main[scope_type]">
                     <option value=""><?php echo $selectPlaceholder; ?></option>
                     <?php foreach (getRefOptions('scope_of_work') as $opt): ?>
@@ -30,6 +30,11 @@
                     <option value="0" <?php echo (isset($main['erection']) && $main['erection'] === '0') ? 'selected' : ''; ?>><?php echo $noLabel; ?></option>
                     <option value="1" <?php echo ($main['erection'] ?? '') == '1' ? 'selected' : ''; ?>><?php echo $yesLabel; ?></option>
                 </select>
+            </div>
+        </div>
+        <div class="row g-3 mb-2">
+            <div class="col-12">
+                <label class="form-label fw-bold"><?php echo fieldLabel('辅材', 'Auxiliary'); ?></label>
             </div>
         </div>
         <div class="switch-group">

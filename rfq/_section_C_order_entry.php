@@ -31,7 +31,7 @@ foreach ($files as $file) {
 <!-- ========== 报价资料 Order Entry ========== -->
 <div class="form-section">
     <div class="form-section-header">
-        <i class="bi bi-folder-check"></i> <?php echo sectionTitle('报价资料', 'Order Entry'); ?>
+        <i class="bi bi-folder-check"></i> <span class="section-number">C.</span> <?php echo sectionTitle('报价资料', 'Order Entry'); ?>
     </div>
     <div class="form-section-body">
         <div class="switch-group">

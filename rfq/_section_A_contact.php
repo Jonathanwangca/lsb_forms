@@ -7,7 +7,7 @@
 <!-- ========== 联系人信息 ========== -->
 <div class="form-section">
     <div class="form-section-header">
-        <i class="bi bi-person-lines-fill"></i> <?php echo sectionTitle('联系人信息', 'Contact Information'); ?>
+        <i class="bi bi-person-lines-fill"></i> <span class="section-number">A.</span> <?php echo sectionTitle('联系人信息', 'Contact Information'); ?>
     </div>
     <div class="form-section-body">
         <div class="row g-3">

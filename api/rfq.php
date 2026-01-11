@@ -9,6 +9,17 @@ require_once dirname(__DIR__) . '/includes/functions.php';
 $method = $_SERVER['REQUEST_METHOD'];
 $action = $_REQUEST['action'] ?? '';
 
+// 如果是 JSON 请求，从请求体中获取 action
+if (empty($action) && $method === 'POST') {
+    $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+    if (strpos($contentType, 'application/json') !== false) {
+        $jsonInput = json_decode(file_get_contents('php://input'), true);
+        if ($jsonInput && isset($jsonInput['action'])) {
+            $action = $jsonInput['action'];
+        }
+    }
+}
+
 try {
     switch ($action) {
         case 'save':
@@ -55,6 +66,12 @@ function handleSave() {
     // 主表数据
     if (isset($_POST['main'])) {
         $main = $_POST['main'];
+
+        // 处理 rfq_no: 编辑时不允许覆盖为空值
+        if ($rfqId > 0 && empty($main['rfq_no'])) {
+            unset($main['rfq_no']); // 移除空的 rfq_no，保留数据库中的值
+        }
+
         // 处理复选框字段 (建筑结构特征 + 报价范围)
         $checkboxFields = [
             // 建筑结构特征
@@ -156,10 +173,13 @@ function handleSave() {
         unset($panel);
     }
 
-    // 保温棉数据
+    // 保温棉数据 - 保存任何有实际数据的记录
     if (isset($_POST['insulations'])) {
         $data['insulations'] = array_filter($_POST['insulations'], function($i) {
-            return !empty($i['thickness']);
+            // 检查是否有任何有意义的数据（不仅仅是thickness）
+            return !empty($i['thickness']) || !empty($i['density']) || !empty($i['facing'])
+                || !empty($i['flame_retardant']) || !empty($i['color']) || !empty($i['brand'])
+                || !empty($i['other_requirements']);
         });
     }
 
@@ -168,13 +188,25 @@ function handleSave() {
         $data['methods'] = array_filter($_POST['methods'], function($m) {
             return !empty($m['method_desc']);
         });
+        // 移除数据库中不存在的字段
+        foreach ($data['methods'] as &$method) {
+            unset($method['method_code']); // 数据库表中没有此字段
+        }
+        unset($method);
     }
 
-    // 排水数据
+    // 排水数据 - 保存任何有实际数据的记录
     if (isset($_POST['drainages'])) {
         $data['drainages'] = array_filter($_POST['drainages'], function($d) {
-            return !empty($d['method']);
+            // 检查是否有任何有意义的数据
+            return !empty($d['method']) || !empty($d['scope']) || !empty($d['gutter_spec'])
+                || !empty($d['downpipe_type']);
         });
+        // 移除数据库中不存在的字段
+        foreach ($data['drainages'] as &$drain) {
+            unset($drain['drainage_no']); // 数据库表中没有此字段
+        }
+        unset($drain);
     }
 
     // 备注数据
@@ -353,12 +385,42 @@ function handleDelete() {
         jsonError('RFQ ID is required', 400);
     }
 
-    $deleted = dbDelete('lsb_rfq_main', 'id = ?', [$rfqId]);
+    try {
+        // 检查RFQ是否存在
+        $rfq = dbQueryOne("SELECT id, rfq_no FROM lsb_rfq_main WHERE id = ?", [$rfqId]);
+        if (!$rfq) {
+            jsonError('RFQ not found', 404);
+        }
 
-    if ($deleted) {
-        jsonSuccess(null, 'RFQ deleted successfully');
-    } else {
-        jsonError('RFQ not found', 404);
+        // 删除关联的文件记录和物理文件
+        $files = dbQuery("SELECT file_path FROM lsb_rfq_files WHERE rfq_id = ?", [$rfqId]);
+        foreach ($files as $file) {
+            $filePath = dirname(__DIR__) . $file['file_path'];
+            if (file_exists($filePath)) {
+                @unlink($filePath);
+            }
+        }
+
+        // 删除上传目录
+        $uploadDir = dirname(__DIR__) . '/uploads/rfq/' . $rfqId;
+        if (is_dir($uploadDir)) {
+            @rmdir($uploadDir);
+        }
+
+        // 删除主表记录（外键级联会自动删除关联表记录）
+        $deleted = dbDelete('lsb_rfq_main', 'id = ?', [$rfqId]);
+
+        if ($deleted) {
+            jsonSuccess(['rfq_no' => $rfq['rfq_no']], 'RFQ deleted successfully');
+        } else {
+            jsonError('Failed to delete RFQ', 500);
+        }
+    } catch (PDOException $e) {
+        error_log('Delete RFQ Error: ' . $e->getMessage());
+        jsonError('Database error: ' . $e->getMessage(), 500);
+    } catch (Exception $e) {
+        error_log('Delete RFQ Error: ' . $e->getMessage());
+        jsonError('Error: ' . $e->getMessage(), 500);
     }
 }
 

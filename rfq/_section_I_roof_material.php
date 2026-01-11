@@ -48,12 +48,12 @@ if (empty($roofInsulations)) {
     ];
 }
 
-// 预设排水数据
-$roofDrainages = array_values(array_filter($drainages ?? [], fn($d) => in_array($d['drainage_type'] ?? '', ['roof', 'canopy'])));
+// 预设排水数据 - 数据库使用 roof_1, roof_2, canopy 作为类型值
+$roofDrainages = array_values(array_filter($drainages ?? [], fn($d) => in_array($d['drainage_type'] ?? '', ['roof_1', 'roof_2', 'canopy'])));
 if (empty($roofDrainages)) {
     $roofDrainages = [
-        ['drainage_type' => 'roof', 'drainage_no' => 1],
-        ['drainage_type' => 'roof', 'drainage_no' => 2],
+        ['drainage_type' => 'roof_1', 'drainage_no' => 1],
+        ['drainage_type' => 'roof_2', 'drainage_no' => 2],
         ['drainage_type' => 'canopy', 'drainage_no' => 1],
     ];
 }
@@ -65,7 +65,9 @@ if (empty($roofDrainages)) {
  */
 function renderRoofDrainageRow($drain, $index, $lang, $selectPlaceholder) {
     $prefix = "drainages[roof_{$index}]";
-    $label = ($drain['drainage_type'] ?? 'roof') === 'canopy'
+    $drainType = $drain['drainage_type'] ?? 'roof_1';
+    $isCanopy = $drainType === 'canopy';
+    $label = $isCanopy
         ? ($lang === 'en' ? 'Canopy Drainage' : '雨蓬排水')
         : ($lang === 'en' ? 'Roof Drainage ' : '屋面排水') . $index;
     ob_start();
@@ -73,13 +75,14 @@ function renderRoofDrainageRow($drain, $index, $lang, $selectPlaceholder) {
 <tr class="drainage-row" data-index="<?php echo $index; ?>">
     <td class="text-nowrap">
         <strong><span class="drain-label"><?php echo $label; ?></span>:</strong>
-        <input type="hidden" name="<?php echo $prefix; ?>[drainage_type]" class="drain-type" value="<?php echo h($drain['drainage_type'] ?? 'roof'); ?>">
+        <input type="hidden" name="<?php echo $prefix; ?>[drainage_type]" class="drain-type" value="<?php echo h($drainType); ?>">
         <input type="hidden" name="<?php echo $prefix; ?>[drainage_no]" class="drain-no" value="<?php echo $index; ?>">
     </td>
     <td>
-        <select class="form-select form-select-sm drain-type-select" onchange="RoofMaterial.updateDrainType(this)">
-            <option value="roof" <?php echo ($drain['drainage_type'] ?? 'roof') === 'roof' ? 'selected' : ''; ?>><?php echo $lang === 'en' ? 'Roof' : '屋面'; ?></option>
-            <option value="canopy" <?php echo ($drain['drainage_type'] ?? '') === 'canopy' ? 'selected' : ''; ?>><?php echo $lang === 'en' ? 'Canopy' : '雨蓬'; ?></option>
+        <select class="form-select form-select-sm drain-type-select" onchange="RoofMaterial.updateDrainType(this, <?php echo $index; ?>)">
+            <option value="roof_1" <?php echo $drainType === 'roof_1' ? 'selected' : ''; ?>><?php echo $lang === 'en' ? 'Roof 1' : '屋面1'; ?></option>
+            <option value="roof_2" <?php echo $drainType === 'roof_2' ? 'selected' : ''; ?>><?php echo $lang === 'en' ? 'Roof 2' : '屋面2'; ?></option>
+            <option value="canopy" <?php echo $drainType === 'canopy' ? 'selected' : ''; ?>><?php echo $lang === 'en' ? 'Canopy' : '雨蓬'; ?></option>
         </select>
     </td>
     <td>
@@ -186,7 +189,7 @@ function renderRoofPanelRow($panel, $index, $panelType, $profileRef, $lang, $sel
     <td>
         <select class="form-select form-select-sm" name="<?php echo $prefix; ?>[color]">
             <option value=""><?php echo $selectPlaceholder; ?></option>
-            <?php foreach (getRefOptions('panel_color_ral') as $opt): ?>
+            <?php foreach (getRefOptions('panel_color') as $opt): ?>
             <option value="<?php echo h($opt['value']); ?>" <?php echo ($panel['color'] ?? '') == $opt['value'] ? 'selected' : ''; ?>>
                 <?php echo h($opt['label']); ?>
             </option>
@@ -196,7 +199,7 @@ function renderRoofPanelRow($panel, $index, $panelType, $profileRef, $lang, $sel
     <td>
         <select class="form-select form-select-sm" name="<?php echo $prefix; ?>[origin]">
             <option value=""><?php echo $selectPlaceholder; ?></option>
-            <?php foreach (getRefOptions('panel_brand') as $opt): ?>
+            <?php foreach (getRefOptions('panel_origin') as $opt): ?>
             <option value="<?php echo h($opt['value']); ?>" <?php echo ($panel['origin'] ?? '') == $opt['value'] ? 'selected' : ''; ?>>
                 <?php echo h($opt['label']); ?>
             </option>
@@ -344,7 +347,7 @@ function renderCanopyPanelRow($panel, $index, $panelType, $lang, $selectPlacehol
     <td>
         <select class="form-select form-select-sm" name="<?php echo $prefix; ?>[color]">
             <option value=""><?php echo $selectPlaceholder; ?></option>
-            <?php foreach (getRefOptions('panel_color_ral') as $opt): ?>
+            <?php foreach (getRefOptions('panel_color') as $opt): ?>
             <option value="<?php echo h($opt['value']); ?>" <?php echo ($panel['color'] ?? '') == $opt['value'] ? 'selected' : ''; ?>>
                 <?php echo h($opt['label']); ?>
             </option>
@@ -354,7 +357,7 @@ function renderCanopyPanelRow($panel, $index, $panelType, $lang, $selectPlacehol
     <td>
         <select class="form-select form-select-sm" name="<?php echo $prefix; ?>[origin]">
             <option value=""><?php echo $selectPlaceholder; ?></option>
-            <?php foreach (getRefOptions('panel_brand') as $opt): ?>
+            <?php foreach (getRefOptions('panel_origin') as $opt): ?>
             <option value="<?php echo h($opt['value']); ?>" <?php echo ($panel['origin'] ?? '') == $opt['value'] ? 'selected' : ''; ?>>
                 <?php echo h($opt['label']); ?>
             </option>
@@ -374,13 +377,13 @@ function renderCanopyPanelRow($panel, $index, $panelType, $lang, $selectPlacehol
 <!-- ========== 屋面系统材质要求 ========== -->
 <div class="form-section">
     <div class="form-section-header">
-        <i class="bi bi-house-door"></i> <?php echo sectionTitle('屋面系统材质要求', 'Roof Material Requirements'); ?>
+        <i class="bi bi-house-door"></i> <span class="section-number">I.</span> <?php echo sectionTitle('屋面系统材质要求', 'Roof Material Requirements'); ?>
     </div>
     <div class="form-section-body">
         <!-- 屋面排水系统 -->
         <div class="form-subsection">
             <div class="form-subsection-title d-flex justify-content-between align-items-center">
-                <span><?php echo sectionTitle('屋面排水系统', 'Roof Drainage System'); ?></span>
+                <span><span class="subsection-number">I.1</span> <?php echo sectionTitle('屋面排水系统', 'Roof Drainage System'); ?></span>
                 <button type="button" class="btn btn-sm btn-outline-primary" onclick="RoofMaterial.addDrainageRow()">
                     <i class="bi bi-plus"></i> <?php echo $lang === 'en' ? 'Add' : '添加'; ?>
                 </button>
@@ -393,7 +396,7 @@ function renderCanopyPanelRow($panel, $index, $panelType, $lang, $selectPlacehol
                         <th style="width:140px;"><?php echo $lang === 'en' ? 'Method' : '排水方式'; ?></th>
                         <th style="width:100px;"><?php echo $lang === 'en' ? 'Scope' : '范围'; ?></th>
                         <th style="width:160px;"><?php echo $lang === 'en' ? 'Gutter Spec' : '天沟规格'; ?></th>
-                        <th style="width:140px;"><?php echo $lang === 'en' ? 'Downpipe' : '落水管'; ?></th>
+                        <th style="width:140px;"><?php echo $lang === 'en' ? 'Downspout' : '落水管'; ?></th>
                         <th style="width:50px;"><?php echo $lang === 'en' ? 'Act.' : '操作'; ?></th>
                     </tr>
                 </thead>
@@ -408,7 +411,7 @@ function renderCanopyPanelRow($panel, $index, $panelType, $lang, $selectPlacehol
         <!-- 屋面外板 -->
         <div class="form-subsection">
             <div class="form-subsection-title d-flex justify-content-between align-items-center">
-                <span><?php echo sectionTitle('屋面外板', 'Roof Outer Panel'); ?></span>
+                <span><span class="subsection-number">I.2</span> <?php echo sectionTitle('屋面外板', 'Roof Outer Panel'); ?></span>
                 <button type="button" class="btn btn-sm btn-outline-primary" onclick="RoofMaterial.addPanelRow('outer')">
                     <i class="bi bi-plus"></i> <?php echo $lang === 'en' ? 'Add' : '添加'; ?>
                 </button>
@@ -438,7 +441,7 @@ function renderCanopyPanelRow($panel, $index, $panelType, $lang, $selectPlacehol
         <!-- 屋面保温棉 -->
         <div class="form-subsection">
             <div class="form-subsection-title d-flex justify-content-between align-items-center">
-                <span><?php echo sectionTitle('屋面保温棉', 'Roof Insulation'); ?></span>
+                <span><span class="subsection-number">I.3</span> <?php echo sectionTitle('屋面保温棉', 'Roof Insulation'); ?></span>
                 <button type="button" class="btn btn-sm btn-outline-primary" onclick="RoofMaterial.addInsulationRow()">
                     <i class="bi bi-plus"></i> <?php echo $lang === 'en' ? 'Add' : '添加'; ?>
                 </button>
@@ -446,14 +449,14 @@ function renderCanopyPanelRow($panel, $index, $panelType, $lang, $selectPlacehol
             <table class="table table-sm table-bordered align-middle mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th style="width:120px;"><?php echo $lang === 'en' ? 'Item' : '项目'; ?></th>
-                        <th style="width:70px;"><?php echo $lang === 'en' ? 'Thick.' : '厚度'; ?></th>
-                        <th style="width:70px;"><?php echo $lang === 'en' ? 'Density' : '容重'; ?></th>
-                        <th style="width:100px;"><?php echo $lang === 'en' ? 'Facing' : '贴面'; ?></th>
-                        <th style="width:100px;"><?php echo $lang === 'en' ? 'Flame' : '阻燃'; ?></th>
-                        <th style="width:90px;"><?php echo $lang === 'en' ? 'Color' : '颜色'; ?></th>
-                        <th style="width:100px;"><?php echo $lang === 'en' ? 'Brand' : '品牌'; ?></th>
-                        <th><?php echo $lang === 'en' ? 'Other' : '其他要求'; ?></th>
+                        <th style="width:130px;"><?php echo $lang === 'en' ? 'Item' : '项目'; ?></th>
+                        <th style="width:75px;"><?php echo $lang === 'en' ? 'Thick.' : '厚度'; ?></th>
+                        <th style="width:75px;"><?php echo $lang === 'en' ? 'Density' : '容重'; ?></th>
+                        <th style="width:120px;"><?php echo $lang === 'en' ? 'Facing' : '贴面'; ?></th>
+                        <th style="width:120px;"><?php echo $lang === 'en' ? 'Flame' : '阻燃'; ?></th>
+                        <th style="width:100px;"><?php echo $lang === 'en' ? 'Color' : '颜色'; ?></th>
+                        <th style="width:120px;"><?php echo $lang === 'en' ? 'Brand' : '品牌'; ?></th>
+                        <th style="width:100px;"><?php echo $lang === 'en' ? 'Other' : '其他'; ?></th>
                         <th style="width:50px;"><?php echo $lang === 'en' ? 'Act.' : '操作'; ?></th>
                     </tr>
                 </thead>
@@ -467,7 +470,7 @@ function renderCanopyPanelRow($panel, $index, $panelType, $lang, $selectPlacehol
 
         <!-- 防水透气膜/隔汽膜/钢丝网 -->
         <div class="form-subsection">
-            <div class="form-subsection-title"><?php echo sectionTitle('防水透气膜/隔汽膜/钢丝网', 'Membrane & Wire Mesh'); ?></div>
+            <div class="form-subsection-title"><span class="subsection-number">I.4</span> <?php echo sectionTitle('防水透气膜/隔汽膜/钢丝网', 'Membrane & Wire Mesh'); ?></div>
             <div class="row g-3">
                 <div class="col-md-2">
                     <label class="form-label"><?php echo $lang === 'en' ? 'Waterproof Membrane' : '防水透气膜'; ?></label>
@@ -519,7 +522,7 @@ function renderCanopyPanelRow($panel, $index, $panelType, $lang, $selectPlacehol
         <!-- 屋面内衬板 -->
         <div class="form-subsection">
             <div class="form-subsection-title d-flex justify-content-between align-items-center">
-                <span><?php echo sectionTitle('屋面内衬板', 'Roof Liner Panel'); ?></span>
+                <span><span class="subsection-number">I.5</span> <?php echo sectionTitle('屋面内衬板', 'Roof Liner Panel'); ?></span>
                 <button type="button" class="btn btn-sm btn-outline-primary" onclick="RoofMaterial.addPanelRow('liner')">
                     <i class="bi bi-plus"></i> <?php echo $lang === 'en' ? 'Add' : '添加'; ?>
                 </button>
@@ -567,7 +570,7 @@ function renderCanopyPanelRow($panel, $index, $panelType, $lang, $selectPlacehol
         <!-- 大雨蓬板 -->
         <div class="form-subsection">
             <div class="form-subsection-title d-flex justify-content-between align-items-center">
-                <span><?php echo sectionTitle('大雨蓬板', 'Loading Canopy Panel'); ?></span>
+                <span><span class="subsection-number">I.6</span> <?php echo sectionTitle('大雨蓬板', 'Loading Canopy Panel'); ?></span>
                 <button type="button" class="btn btn-sm btn-outline-primary" onclick="RoofMaterial.addCanopyRow()">
                     <i class="bi bi-plus"></i> <?php echo $lang === 'en' ? 'Add' : '添加'; ?>
                 </button>
@@ -609,7 +612,7 @@ function renderCanopyPanelRow($panel, $index, $panelType, $lang, $selectPlacehol
 
         <!-- 小雨蓬 -->
         <div class="form-subsection">
-            <div class="form-subsection-title"><?php echo sectionTitle('标准小雨蓬', 'Small Canopy'); ?></div>
+            <div class="form-subsection-title"><span class="subsection-number">I.7</span> <?php echo sectionTitle('标准小雨蓬', 'Small Canopy'); ?></div>
             <div class="row g-3">
                 <div class="col-md-2">
                     <label class="form-label"><?php echo $lang === 'en' ? 'Width (mm)' : '悬挑宽度'; ?></label>
@@ -654,7 +657,7 @@ function renderCanopyPanelRow($panel, $index, $panelType, $lang, $selectPlacehol
 
         <!-- 屋面采光 -->
         <div class="form-subsection">
-            <div class="form-subsection-title"><?php echo sectionTitle('屋面采光', 'Roof Skylight'); ?></div>
+            <div class="form-subsection-title"><span class="subsection-number">I.8</span> <?php echo sectionTitle('屋面采光', 'Roof Skylight'); ?></div>
             <div class="row g-3">
                 <div class="col-md-2">
                     <label class="form-label"><?php echo $lang === 'en' ? 'Layout' : '铺设方式'; ?></label>
@@ -719,7 +722,7 @@ function renderCanopyPanelRow($panel, $index, $panelType, $lang, $selectPlacehol
 
         <!-- 其他屋面材料 -->
         <div class="form-subsection">
-            <div class="form-subsection-title"><?php echo sectionTitle('其他屋面材料', 'Other Roof Materials'); ?></div>
+            <div class="form-subsection-title"><span class="subsection-number">I.9</span> <?php echo sectionTitle('其他屋面材料', 'Other Roof Materials'); ?></div>
             <div class="row g-3">
                 <div class="col-md-4">
                     <label class="form-label"><?php echo $lang === 'en' ? 'Rockwool Panel' : '岩棉板'; ?></label>
@@ -787,16 +790,22 @@ const RoofMaterial = {
     },
 
     // 更新排水类型标签
-    updateDrainType: function(select) {
+    updateDrainType: function(select, index) {
         const row = select.closest('.drainage-row');
         const typeInput = row.querySelector('.drain-type');
         const labelSpan = row.querySelector('.drain-label');
         const type = select.value;
         typeInput.value = type;
         const idx = row.dataset.index;
-        labelSpan.textContent = type === 'canopy'
-            ? '<?php echo $lang === "en" ? "Canopy Drainage" : "雨蓬排水"; ?>'
-            : '<?php echo $lang === "en" ? "Roof Drainage " : "屋面排水"; ?>' + idx;
+        if (type === 'canopy') {
+            labelSpan.textContent = '<?php echo $lang === "en" ? "Canopy Drainage" : "雨蓬排水"; ?>';
+        } else if (type === 'roof_1') {
+            labelSpan.textContent = '<?php echo $lang === "en" ? "Roof Drainage 1" : "屋面排水1"; ?>';
+        } else if (type === 'roof_2') {
+            labelSpan.textContent = '<?php echo $lang === "en" ? "Roof Drainage 2" : "屋面排水2"; ?>';
+        } else {
+            labelSpan.textContent = '<?php echo $lang === "en" ? "Roof Drainage " : "屋面排水"; ?>' + idx;
+        }
     },
 
     // 添加板材行
@@ -893,10 +902,16 @@ const RoofMaterial = {
             if (label) {
                 if (rowType === 'drainage') {
                     const typeSelect = row.querySelector('.drain-type-select');
-                    const type = typeSelect ? typeSelect.value : 'roof';
-                    label.textContent = type === 'canopy'
-                        ? '<?php echo $lang === "en" ? "Canopy Drainage" : "雨蓬排水"; ?>'
-                        : labelPrefix[rowType] + num;
+                    const type = typeSelect ? typeSelect.value : 'roof_1';
+                    if (type === 'canopy') {
+                        label.textContent = '<?php echo $lang === "en" ? "Canopy Drainage" : "雨蓬排水"; ?>';
+                    } else if (type === 'roof_1') {
+                        label.textContent = '<?php echo $lang === "en" ? "Roof Drainage 1" : "屋面排水1"; ?>';
+                    } else if (type === 'roof_2') {
+                        label.textContent = '<?php echo $lang === "en" ? "Roof Drainage 2" : "屋面排水2"; ?>';
+                    } else {
+                        label.textContent = labelPrefix[rowType] + num;
+                    }
                 } else {
                     label.textContent = labelPrefix[rowType] + num;
                 }

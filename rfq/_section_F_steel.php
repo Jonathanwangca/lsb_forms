@@ -7,12 +7,12 @@
 <!-- ========== 建筑尺寸 & 钢结构 ========== -->
 <div class="form-section">
     <div class="form-section-header">
-        <i class="bi bi-rulers"></i> <?php echo sectionTitle('建筑描述 & 钢结构材料', 'Building Dimensions & Steel'); ?>
+        <i class="bi bi-rulers"></i> <span class="section-number">F.</span> <?php echo sectionTitle('建筑描述 & 钢结构材料', 'Building Dimensions & Steel'); ?>
     </div>
     <div class="form-section-body">
         <!-- 建筑尺寸 -->
         <div class="form-subsection">
-            <div class="form-subsection-title"><?php echo sectionTitle('建筑尺寸', 'Building Dimensions'); ?></div>
+            <div class="form-subsection-title"><span class="subsection-number">F.1</span> <?php echo sectionTitle('建筑尺寸', 'Building Dimensions'); ?></div>
             <div class="row g-3">
                 <div class="col-md-2">
                     <label class="form-label"><?php echo FL('length'); ?></label>
@@ -74,7 +74,7 @@
 
         <!-- 主结构材料 -->
         <div class="form-subsection">
-            <div class="form-subsection-title"><?php echo sectionTitle('主结构材料', 'Primary Steel'); ?></div>
+            <div class="form-subsection-title"><span class="subsection-number">F.2</span> <?php echo sectionTitle('主结构材料', 'Primary Steel'); ?></div>
             <div class="row g-3">
                 <div class="col-md-2">
                     <label class="form-label"><?php echo FL('steel_grade'); ?></label>
@@ -147,7 +147,7 @@
 
         <!-- 中间漆+面漆 -->
         <div class="form-subsection">
-            <div class="form-subsection-title"><?php echo sectionTitle('中间漆+面漆', 'Intermediate & Top Coat'); ?></div>
+            <div class="form-subsection-title"><span class="subsection-number">F.3</span> <?php echo sectionTitle('中间漆+面漆', 'Intermediate & Top Coat'); ?></div>
             <div class="row g-3">
                 <div class="col-md-2">
                     <label class="form-label"><?php echo FL('intermediate_coat'); ?></label>
@@ -206,7 +206,7 @@
 
         <!-- 外露构件油漆 -->
         <div class="form-subsection">
-            <div class="form-subsection-title"><?php echo sectionTitle('外露构件油漆', 'Exposed Paint'); ?></div>
+            <div class="form-subsection-title"><span class="subsection-number">F.4</span> <?php echo sectionTitle('外露构件油漆', 'Exposed Paint'); ?></div>
             <div class="row g-3">
                 <div class="col-md-3">
                     <label class="form-label"><?php echo FL('exposed_paint'); ?></label>
@@ -230,7 +230,7 @@
 
         <!-- 防火涂料 -->
         <div class="form-subsection">
-            <div class="form-subsection-title"><?php echo sectionTitle('普通钢结构防火涂料', 'Fire Coating'); ?></div>
+            <div class="form-subsection-title"><span class="subsection-number">F.5</span> <?php echo sectionTitle('普通钢结构防火涂料', 'Fire Coating'); ?></div>
             <div class="row g-3">
                 <div class="col-md-2">
                     <label class="form-label"><?php echo FL('fire_coating_na'); ?></label>
@@ -262,7 +262,7 @@
 
         <!-- 次结构材料 -->
         <div class="form-subsection">
-            <div class="form-subsection-title"><?php echo sectionTitle('次结构材料', 'Secondary Steel'); ?></div>
+            <div class="form-subsection-title"><span class="subsection-number">F.6</span> <?php echo sectionTitle('次结构材料', 'Secondary Steel'); ?></div>
             <div class="row g-3">
                 <div class="col-md-3">
                     <label class="form-label"><?php echo FL('secondary_manufacturer'); ?></label>
@@ -321,7 +321,7 @@
 
         <!-- 花纹钢板 -->
         <div class="form-subsection">
-            <div class="form-subsection-title"><?php echo sectionTitle('花纹钢板', 'Checkered Plate'); ?></div>
+            <div class="form-subsection-title"><span class="subsection-number">F.7</span> <?php echo sectionTitle('花纹钢板', 'Checkered Plate'); ?></div>
             <div class="row g-3">
                 <div class="col-md-3">
                     <label class="form-label"><?php echo FL('checkered_plate_paint'); ?></label>

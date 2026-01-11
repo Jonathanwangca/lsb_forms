@@ -7,7 +7,7 @@
 <!-- ========== 状态 ========== -->
 <div class="form-section">
     <div class="form-section-header">
-        <i class="bi bi-flag"></i> <?php echo sectionTitle('状态', 'Status'); ?>
+        <i class="bi bi-flag"></i> <span class="section-number">L.</span> <?php echo sectionTitle('状态', 'Status'); ?>
     </div>
     <div class="form-section-body">
         <div class="row g-3">

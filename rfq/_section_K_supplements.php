@@ -26,7 +26,7 @@ $importanceLevels = [
 <!-- ========== 补充说明 (V3.2) ========== -->
 <div class="form-section">
     <div class="form-section-header">
-        <i class="bi bi-chat-left-text"></i> <?php echo sectionTitle('补充说明', 'Supplements'); ?>
+        <i class="bi bi-chat-left-text"></i> <span class="section-number">K.</span> <?php echo sectionTitle('备注', 'Notes'); ?>
         <button type="button" class="btn btn-sm btn-outline-light float-end" onclick="Supplements.addRow()">
             <i class="bi bi-plus"></i> <?php echo $lang === 'en' ? 'Add Note' : '添加说明'; ?>
         </button>
@@ -133,6 +133,12 @@ const Supplements = {
         const container = document.getElementById('supplements-container');
         const template = document.getElementById('supplement-template');
         const emptyMsg = document.getElementById('supplements-empty');
+
+        // 自动展开K Section
+        const section = container.closest('.form-section');
+        if (section && typeof SectionCollapse !== 'undefined') {
+            SectionCollapse.expand(section);
+        }
 
         if (emptyMsg) emptyMsg.remove();
 

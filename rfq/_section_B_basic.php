@@ -7,7 +7,7 @@
 <!-- ========== 基本信息 ========== -->
 <div class="form-section">
     <div class="form-section-header">
-        <i class="bi bi-info-circle"></i> <?php echo sectionTitle('基本信息', 'Basic Information'); ?>
+        <i class="bi bi-info-circle"></i> <span class="section-number">B.</span> <?php echo sectionTitle('基本信息', 'Basic Information'); ?>
     </div>
     <div class="form-section-body">
         <div class="row g-3">

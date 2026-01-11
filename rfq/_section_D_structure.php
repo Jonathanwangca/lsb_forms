@@ -7,7 +7,7 @@
 <!-- ========== 建筑结构概述 ========== -->
 <div class="form-section">
     <div class="form-section-header">
-        <i class="bi bi-building"></i> <?php echo sectionTitle('结构概述', 'Building Structure'); ?>
+        <i class="bi bi-building"></i> <span class="section-number">D.</span> <?php echo sectionTitle('结构概述', 'Building Structure'); ?>
     </div>
     <div class="form-section-body">
         <div class="switch-group">

@@ -12,8 +12,72 @@ if (!isset($_GET['config']) || $_GET['config'] !== 'true') {
     exit;
 }
 
-$pageTitle = 'Parameter Configuration - LSB RFQ System';
-require_once dirname(__DIR__) . '/includes/header.php';
+$pageTitle = 'Parameter Configuration - Inava Steel Customer Portal';
+require_once dirname(__DIR__) . '/includes/rfq_header.php';
+
+// 定义分类到Section的映射
+$sectionMapping = [
+    // Basic Info
+    'rfq_status' => 'basic',
+    // Order Entry
+    'order_entry' => 'order_entry',
+    'file_category' => 'order_entry',
+    // Structure
+    'roof_type' => 'structure',
+    'frame_type' => 'structure',
+    'structure_type' => 'structure',
+    'foundation' => 'structure',
+    // Scope
+    'scope' => 'scope',
+    'scope_scope' => 'scope',
+    'scope_install' => 'scope',
+    // Steel
+    'steel_grade' => 'steel',
+    'steel_standard' => 'steel',
+    'primer' => 'steel',
+    'intermediate_coat' => 'steel',
+    'top_coat' => 'steel',
+    'exposed_paint' => 'steel',
+    'fire_coating' => 'steel',
+    'secondary_steel' => 'steel',
+    'flange_brace' => 'steel',
+    'purlin_type' => 'steel',
+    'girt_type' => 'steel',
+    // Envelope
+    'wall_material' => 'envelope',
+    'waterproof_standard' => 'envelope',
+    'renovation' => 'envelope',
+    // Roof Material
+    'drainage_method' => 'roof_material',
+    'gutter_material' => 'roof_material',
+    'downpipe_type' => 'roof_material',
+    'panel_profile' => 'roof_material',
+    'panel_strength' => 'roof_material',
+    'panel_coating' => 'roof_material',
+    'galvanizing' => 'roof_material',
+    'insulation_facing' => 'roof_material',
+    'membrane' => 'roof_material',
+    'skylight' => 'roof_material',
+    'canopy' => 'roof_material',
+    // Wall Material
+    'wall_panel' => 'wall_material',
+    'wall_insulation' => 'wall_material',
+    'parapet' => 'wall_material',
+    'partition' => 'wall_material',
+];
+
+// Section定义
+$sections = [
+    'basic' => ['en' => 'Basic Info', 'cn' => '基本信息', 'icon' => 'bi-info-circle'],
+    'order_entry' => ['en' => 'Order Entry', 'cn' => '报价资料', 'icon' => 'bi-folder-check'],
+    'structure' => ['en' => 'Structure', 'cn' => '结构概述', 'icon' => 'bi-building'],
+    'scope' => ['en' => 'Scope', 'cn' => '报价范围', 'icon' => 'bi-list-check'],
+    'steel' => ['en' => 'Steel', 'cn' => '钢结构材料', 'icon' => 'bi-box'],
+    'envelope' => ['en' => 'Envelope', 'cn' => '围护系统', 'icon' => 'bi-house'],
+    'roof_material' => ['en' => 'Roof Material', 'cn' => '屋面材质', 'icon' => 'bi-house-door'],
+    'wall_material' => ['en' => 'Wall Material', 'cn' => '墙面材质', 'icon' => 'bi-bricks'],
+    'other' => ['en' => 'Other', 'cn' => '其他', 'icon' => 'bi-three-dots'],
+];
 
 // 获取所有分类
 $categories = dbQuery("
@@ -21,6 +85,54 @@ $categories = dbQuery("
     FROM lsb_rfq_reference
     ORDER BY category
 ");
+
+// 根据category确定section
+function getCategorySection($category, $sectionMapping) {
+    // 精确匹配
+    if (isset($sectionMapping[$category])) {
+        return $sectionMapping[$category];
+    }
+    // 前缀匹配
+    foreach ($sectionMapping as $key => $section) {
+        if (strpos($category, $key) === 0) {
+            return $section;
+        }
+    }
+    // 关键词匹配
+    $keywords = [
+        'roof' => 'roof_material',
+        'wall' => 'wall_material',
+        'steel' => 'steel',
+        'paint' => 'steel',
+        'coat' => 'steel',
+        'primer' => 'steel',
+        'panel' => 'roof_material',
+        'insul' => 'roof_material',
+        'drain' => 'roof_material',
+        'gutter' => 'roof_material',
+        'scope' => 'scope',
+        'install' => 'scope',
+        'envelope' => 'envelope',
+        'structure' => 'structure',
+        'frame' => 'structure',
+    ];
+    foreach ($keywords as $keyword => $section) {
+        if (stripos($category, $keyword) !== false) {
+            return $section;
+        }
+    }
+    return 'other';
+}
+
+// 按Section分组categories
+$groupedCategories = [];
+foreach ($categories as $cat) {
+    $section = getCategorySection($cat['category'], $sectionMapping);
+    if (!isset($groupedCategories[$section])) {
+        $groupedCategories[$section] = [];
+    }
+    $groupedCategories[$section][] = $cat;
+}
 
 // 当前选中的分类
 $currentCategory = isset($_GET['category']) ? $_GET['category'] : '';
@@ -37,36 +149,77 @@ if ($currentCategory) {
 
 <div class="row">
     <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h4><i class="bi bi-gear"></i> <?php echo $lang === 'en' ? 'Parameter Configuration' : '参数配置管理'; ?></h4>
+        <div class="d-flex justify-content-between align-items-center mb-2">
             <div>
-                <a href="/aiforms/rfq/config_labels.php?config=true<?php echo $lang !== 'both' ? '&lang='.$lang : ''; ?>" class="btn btn-outline-primary me-2">
+                <span class="h5 mb-0"><i class="bi bi-gear"></i> <?php echo $lang === 'en' ? 'Parameter Configuration' : '参数配置管理'; ?></span>
+            </div>
+            <div>
+                <a href="/aiforms/rfq/config_labels.php?config=true<?php echo $lang !== 'both' ? '&lang='.$lang : ''; ?>" class="btn btn-outline-primary">
                     <i class="bi bi-translate"></i> <?php echo $lang === 'en' ? 'Labels' : '标签配置'; ?>
                 </a>
-                <a href="/aiforms/rfq/list.php" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left"></i> <?php echo $lang === 'en' ? 'Back to List' : '返回列表'; ?>
+                <a href="/aiforms/rfq/config_schema.php?config=true<?php echo $lang !== 'both' ? '&lang='.$lang : ''; ?>" class="btn btn-outline-primary">
+                    <i class="bi bi-diagram-3"></i> <?php echo $lang === 'en' ? 'Schema' : 'Schema配置'; ?>
                 </a>
             </div>
         </div>
+        <p class="text-muted mb-4" style="font-size: 11px;">
+            <?php echo $lang === 'en'
+                ? 'Manage dropdown options for form fields. Add, edit or delete option values used in select boxes throughout the RFQ form.'
+                : 'Manage dropdown options for form fields. 管理表单下拉选项的值，可添加、编辑或删除RFQ表单中各下拉框使用的选项。'; ?>
+        </p>
 
         <div class="row">
             <!-- 左侧分类列表 -->
             <div class="col-md-3">
                 <div class="card">
-                    <div class="card-header">
-                        <i class="bi bi-folder"></i> <?php echo $lang === 'en' ? 'Categories' : '参数分类'; ?>
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-list-ul"></i> <?php echo $lang === 'en' ? 'Index' : '参数索引'; ?></span>
+                        <span class="badge bg-secondary" id="categoryCount"><?php echo count($categories); ?></span>
                     </div>
-                    <div class="list-group list-group-flush" id="category-list" style="max-height: 600px; overflow-y: auto;">
-                        <?php foreach ($categories as $cat): ?>
-                        <a href="?config=true&category=<?php echo urlencode($cat['category']); ?><?php echo $lang !== 'both' ? '&lang='.$lang : ''; ?>"
-                           id="cat-<?php echo h($cat['category']); ?>"
-                           class="list-group-item list-group-item-action <?php echo $currentCategory === $cat['category'] ? 'active' : ''; ?>"
-                           onclick="RefConfig.saveScrollPosition()">
-                            <div class="fw-bold"><?php echo h($cat['category']); ?></div>
-                            <small class="<?php echo $currentCategory === $cat['category'] ? 'text-white-50' : 'text-muted'; ?>">
-                                <?php echo h($cat['category_name_cn']); ?>
-                            </small>
-                        </a>
+                    <!-- 搜索框 -->
+                    <div class="p-2 border-bottom">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control" id="categorySearch"
+                                   placeholder="<?php echo $lang === 'en' ? 'Search...' : '搜索...'; ?>"
+                                   oninput="RefConfig.filterCategories(this.value)">
+                            <button class="btn btn-outline-secondary" type="button" onclick="RefConfig.clearSearch()" title="Clear">
+                                <i class="bi bi-x"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="category-list" style="max-height: 550px; overflow-y: auto;">
+                        <?php foreach ($sections as $sectionKey => $sectionInfo): ?>
+                        <?php if (isset($groupedCategories[$sectionKey]) && !empty($groupedCategories[$sectionKey])): ?>
+                        <div class="category-section" data-section="<?php echo $sectionKey; ?>">
+                            <div class="section-header px-3 py-2 bg-light border-bottom d-flex align-items-center"
+                                 style="cursor: pointer; position: sticky; top: 0; z-index: 1;"
+                                 onclick="RefConfig.toggleSection('<?php echo $sectionKey; ?>')">
+                                <i class="bi <?php echo $sectionInfo['icon']; ?> me-2 text-primary"></i>
+                                <span class="fw-bold text-primary" style="font-size: 0.85rem;">
+                                    <?php echo $lang === 'en' ? $sectionInfo['en'] : $sectionInfo['cn']; ?>
+                                </span>
+                                <span class="badge bg-primary ms-auto"><?php echo count($groupedCategories[$sectionKey]); ?></span>
+                                <i class="bi bi-chevron-down ms-2 section-toggle-icon" id="icon-<?php echo $sectionKey; ?>"></i>
+                            </div>
+                            <div class="section-content" id="section-<?php echo $sectionKey; ?>">
+                                <?php foreach ($groupedCategories[$sectionKey] as $cat): ?>
+                                <a href="?config=true&category=<?php echo urlencode($cat['category']); ?><?php echo $lang !== 'both' ? '&lang='.$lang : ''; ?>"
+                                   id="cat-<?php echo h($cat['category']); ?>"
+                                   class="list-group-item list-group-item-action category-item <?php echo $currentCategory === $cat['category'] ? 'active' : ''; ?>"
+                                   data-category="<?php echo h($cat['category']); ?>"
+                                   data-name="<?php echo h($cat['category_name']); ?>"
+                                   data-name-cn="<?php echo h($cat['category_name_cn']); ?>"
+                                   onclick="RefConfig.saveScrollPosition()">
+                                    <div class="fw-bold" style="font-size: 0.85rem;"><?php echo h($cat['category']); ?></div>
+                                    <small class="<?php echo $currentCategory === $cat['category'] ? 'text-white-50' : 'text-muted'; ?>">
+                                        <?php echo h($cat['category_name_cn']); ?>
+                                    </small>
+                                </a>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                        <?php endif; ?>
                         <?php endforeach; ?>
                     </div>
                 </div>
@@ -97,7 +250,7 @@ if ($currentCategory) {
                                 <thead class="table-light">
                                     <tr>
                                         <th width="60"><?php echo $lang === 'en' ? 'Order' : '排序'; ?></th>
-                                        <th width="120"><?php echo $lang === 'en' ? 'Code' : '代码'; ?></th>
+                                        <th width="120"><?php echo $lang === 'en' ? 'Cost Code' : '成本代码'; ?></th>
                                         <th><?php echo $lang === 'en' ? 'Chinese' : '中文'; ?></th>
                                         <th><?php echo $lang === 'en' ? 'English' : '英文'; ?></th>
                                         <th width="80"><?php echo $lang === 'en' ? 'Default' : '默认'; ?></th>
@@ -256,14 +409,216 @@ if ($currentCategory) {
     </div>
 </div>
 
+<style>
+    /* 全局字体大小 */
+    .row {
+        font-size: 13px;
+    }
+    .card-header, .card-body, .table, .list-group-item {
+        font-size: 13px;
+    }
+    h4 {
+        font-size: 16px !important;
+    }
+    h5 {
+        font-size: 14px !important;
+    }
+    .btn {
+        font-size: 13px;
+        padding: 0.35rem 0.6rem;
+    }
+    .btn-sm {
+        font-size: 12px;
+        padding: 0.25rem 0.5rem;
+    }
+    .badge {
+        font-size: 11px;
+    }
+    .table th, .table td {
+        padding: 0.4rem 0.6rem;
+        font-size: 13px;
+    }
+    .list-group-item {
+        padding: 0.5rem 0.75rem;
+    }
+    code {
+        background: #f1f3f4;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-size: 12px;
+    }
+    .card-header {
+        padding: 0.5rem 0.75rem;
+    }
+    .text-muted, small {
+        font-size: 12px;
+    }
+    .form-control, .input-group-text {
+        font-size: 13px;
+    }
+    .modal-title {
+        font-size: 15px;
+    }
+    .form-label {
+        font-size: 13px;
+    }
+    .section-content {
+        transition: max-height 0.3s ease;
+        overflow: hidden;
+    }
+    .section-content.collapsed {
+        max-height: 0 !important;
+    }
+    .section-toggle-icon {
+        transition: transform 0.3s ease;
+    }
+    .section-toggle-icon.rotated {
+        transform: rotate(-90deg);
+    }
+    .category-item.highlight {
+        background-color: #fff3cd !important;
+        border-color: #ffc107 !important;
+    }
+    .section-header:hover {
+        background-color: #e9ecef !important;
+    }
+    #categorySearch:focus {
+        box-shadow: none;
+        border-color: var(--primary-color);
+    }
+</style>
 <script>
 const RefConfig = {
     modal: null,
     currentCategory: '<?php echo addslashes($currentCategory); ?>',
+    collapsedSections: new Set(),
 
     init() {
         this.modal = new bootstrap.Modal(document.getElementById('refModal'));
+        this.loadSectionState();
         this.restoreScrollPosition();
+        this.expandCurrentSection();
+    },
+
+    // 加载Section折叠状态
+    loadSectionState() {
+        const saved = localStorage.getItem('config_collapsed_sections');
+        if (saved) {
+            try {
+                const arr = JSON.parse(saved);
+                this.collapsedSections = new Set(arr);
+                arr.forEach(section => {
+                    const content = document.getElementById('section-' + section);
+                    const icon = document.getElementById('icon-' + section);
+                    if (content) content.classList.add('collapsed');
+                    if (icon) icon.classList.add('rotated');
+                });
+            } catch (e) {}
+        }
+    },
+
+    // 保存Section折叠状态
+    saveSectionState() {
+        localStorage.setItem('config_collapsed_sections', JSON.stringify([...this.collapsedSections]));
+    },
+
+    // 展开当前选中分类所在的Section
+    expandCurrentSection() {
+        if (this.currentCategory) {
+            const activeItem = document.querySelector('.category-item.active');
+            if (activeItem) {
+                const section = activeItem.closest('.category-section');
+                if (section) {
+                    const sectionKey = section.dataset.section;
+                    const content = document.getElementById('section-' + sectionKey);
+                    const icon = document.getElementById('icon-' + sectionKey);
+                    if (content) content.classList.remove('collapsed');
+                    if (icon) icon.classList.remove('rotated');
+                    this.collapsedSections.delete(sectionKey);
+                    this.saveSectionState();
+                }
+            }
+        }
+    },
+
+    // 切换Section折叠
+    toggleSection(sectionKey) {
+        const content = document.getElementById('section-' + sectionKey);
+        const icon = document.getElementById('icon-' + sectionKey);
+        if (!content) return;
+
+        if (content.classList.contains('collapsed')) {
+            content.classList.remove('collapsed');
+            if (icon) icon.classList.remove('rotated');
+            this.collapsedSections.delete(sectionKey);
+        } else {
+            content.classList.add('collapsed');
+            if (icon) icon.classList.add('rotated');
+            this.collapsedSections.add(sectionKey);
+        }
+        this.saveSectionState();
+    },
+
+    // 搜索过滤
+    filterCategories(query) {
+        query = query.toLowerCase().trim();
+        const items = document.querySelectorAll('.category-item');
+        const sections = document.querySelectorAll('.category-section');
+        let visibleCount = 0;
+
+        // 移除所有高亮
+        items.forEach(item => item.classList.remove('highlight'));
+
+        if (!query) {
+            // 清空搜索时显示所有
+            items.forEach(item => {
+                item.style.display = '';
+                visibleCount++;
+            });
+            sections.forEach(section => {
+                section.style.display = '';
+            });
+        } else {
+            // 根据搜索词过滤
+            items.forEach(item => {
+                const category = (item.dataset.category || '').toLowerCase();
+                const name = (item.dataset.name || '').toLowerCase();
+                const nameCn = (item.dataset.nameCn || '').toLowerCase();
+
+                if (category.includes(query) || name.includes(query) || nameCn.includes(query)) {
+                    item.style.display = '';
+                    item.classList.add('highlight');
+                    visibleCount++;
+                    // 展开所在Section
+                    const section = item.closest('.category-section');
+                    if (section) {
+                        const sectionKey = section.dataset.section;
+                        const content = document.getElementById('section-' + sectionKey);
+                        const icon = document.getElementById('icon-' + sectionKey);
+                        if (content) content.classList.remove('collapsed');
+                        if (icon) icon.classList.remove('rotated');
+                    }
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            // 隐藏没有可见项的Section
+            sections.forEach(section => {
+                const visibleItems = section.querySelectorAll('.category-item[style=""], .category-item:not([style])');
+                const hasVisible = Array.from(section.querySelectorAll('.category-item')).some(item => item.style.display !== 'none');
+                section.style.display = hasVisible ? '' : 'none';
+            });
+        }
+
+        // 更新计数
+        document.getElementById('categoryCount').textContent = visibleCount;
+    },
+
+    // 清除搜索
+    clearSearch() {
+        document.getElementById('categorySearch').value = '';
+        this.filterCategories('');
     },
 
     // 保存左侧分类列表的滚动位置
@@ -498,4 +853,4 @@ const RefConfig = {
 document.addEventListener('DOMContentLoaded', () => RefConfig.init());
 </script>
 
-<?php require_once dirname(__DIR__) . '/includes/footer.php'; ?>
+<?php require_once dirname(__DIR__) . '/includes/rfq_footer.php'; ?>

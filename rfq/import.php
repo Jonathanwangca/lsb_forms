@@ -4,7 +4,7 @@
  * LSB RFQ System V3.1
  */
 $pageTitle = 'Import RFQ - LSB RFQ System';
-require_once dirname(__DIR__) . '/includes/header.php';
+require_once dirname(__DIR__) . '/includes/rfq_header.php';
 ?>
 
 <div class="row justify-content-center">
@@ -194,4 +194,4 @@ document.getElementById('importForm').addEventListener('submit', async function(
 });
 </script>
 
-<?php require_once dirname(__DIR__) . '/includes/footer.php'; ?>
+<?php require_once dirname(__DIR__) . '/includes/rfq_footer.php'; ?>

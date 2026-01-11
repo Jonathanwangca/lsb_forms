@@ -4,20 +4,20 @@
  * 围护系统配置（特殊配置、改造项目等）
  *
  * 注意：板材规格和做法已拆分到独立section
- * - 做法说明 → _section_method.php
- * - 屋面材质 → _section_roof_material.php
- * - 墙面材质 → _section_wall_material.php
+ * - 做法说明 → _section_G_method.php
+ * - 屋面材质 → _section_I_roof_material.php
+ * - 墙面材质 → _section_J_wall_material.php
  */
 ?>
 <!-- ========== 围护系统配置 ========== -->
 <div class="form-section">
     <div class="form-section-header">
-        <i class="bi bi-house"></i> <?php echo sectionTitle('围护系统配置', 'Envelope Configuration'); ?>
+        <i class="bi bi-house"></i> <span class="section-number">H.</span> <?php echo sectionTitle('围护系统配置', 'Envelope Configuration'); ?>
     </div>
     <div class="form-section-body">
         <!-- 屋墙面材料总体配置 -->
         <div class="form-subsection">
-            <div class="form-subsection-title"><?php echo sectionTitle('屋墙面材料（特殊材料请备注）', 'Material Configuration'); ?></div>
+            <div class="form-subsection-title"><span class="subsection-number">H.1</span> <?php echo sectionTitle('屋墙面材料（特殊材料请备注）', 'Material Configuration'); ?></div>
             <div class="row g-3">
                 <div class="col-md-3">
                     <label class="form-label"><?php echo $lang === 'en' ? 'Material Type' : '材料类型'; ?></label>
@@ -41,7 +41,7 @@
 
         <!-- 改造项目 -->
         <div class="form-subsection">
-            <div class="form-subsection-title"><?php echo sectionTitle('改造项目', 'Renovation'); ?></div>
+            <div class="form-subsection-title"><span class="subsection-number">H.2</span> <?php echo sectionTitle('改造项目', 'Renovation'); ?></div>
             <div class="row g-3">
                 <div class="col-md-2">
                     <label class="form-label"><?php echo $lang === 'en' ? 'Is Renovation' : '改造项目'; ?></label>
@@ -87,18 +87,13 @@
             </div>
         </div>
 
-        <!-- 防水规范 -->
+        <!-- 防水规范 (隐藏GB字段) -->
         <div class="form-subsection">
-            <div class="form-subsection-title"><?php echo sectionTitle('防水规范', 'Waterproof Standard'); ?></div>
+            <div class="form-subsection-title"><span class="subsection-number">H.3</span> <?php echo sectionTitle('防水规范', 'Waterproof Standard'); ?></div>
             <div class="row g-3 align-items-center">
-                <div class="col-md-4">
-                    <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" role="switch" name="envelope[waterproof_standard]" value="1" id="sw_gb55030"
-                            <?php echo ($envelope['waterproof_standard'] ?? 0) ? 'checked' : ''; ?>>
-                        <label class="form-check-label" for="sw_gb55030"><?php echo $lang === 'en' ? 'Consider GB55030-2022' : '考虑《建筑与市政工程防水通用规范》GB55030-2022规范'; ?></label>
-                    </div>
-                </div>
-                <div class="col-md-8">
+                <!-- GB字段已隐藏，保留数据字段以防止数据丢失 -->
+                <input type="hidden" name="envelope[waterproof_standard]" value="<?php echo ($envelope['waterproof_standard'] ?? 0) ? '1' : '0'; ?>">
+                <div class="col-md-12">
                     <label class="form-label"><?php echo $lang === 'en' ? 'Remarks' : '备注'; ?></label>
                     <input type="text" class="form-control" name="envelope[waterproof_remarks]"
                            value="<?php echo h($envelope['waterproof_remarks'] ?? ''); ?>">
@@ -108,7 +103,7 @@
 
         <!-- 屋面特殊配置 -->
         <div class="form-subsection">
-            <div class="form-subsection-title"><?php echo sectionTitle('屋面特殊配置', 'Roof Special Configuration'); ?></div>
+            <div class="form-subsection-title"><span class="subsection-number">H.4</span> <?php echo sectionTitle('屋面特殊配置', 'Roof Special Configuration'); ?></div>
             <!-- ACLOK铝镁锰屋面板 -->
             <div class="row g-3 align-items-start">
                 <div class="col-md-3">
@@ -204,7 +199,7 @@
                 </div>
                 <div class="col-md-9">
                     <input type="text" class="form-control form-control-sm" name="envelope[pv_requirements]"
-                           placeholder="<?php echo $lang === 'en' ? 'PV Requirements' : '其他要求'; ?>"
+                           placeholder="<?php echo $lang === 'en' ? 'Other Requirements' : '其他要求'; ?>"
                            value="<?php echo h($envelope['pv_requirements'] ?? ''); ?>">
                 </div>
             </div>

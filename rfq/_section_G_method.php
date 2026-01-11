@@ -95,13 +95,13 @@ function renderMethodRow($method, $index, $category, $options, $lang, $selectPla
 <!-- ========== 屋墙面做法说明 ========== -->
 <div class="form-section">
     <div class="form-section-header">
-        <i class="bi bi-layers-half"></i> <?php echo sectionTitle('屋墙面做法说明', 'Construction Method'); ?>
+        <i class="bi bi-layers-half"></i> <span class="section-number">G.</span> <?php echo sectionTitle('屋墙面做法说明', 'Construction Method'); ?>
     </div>
     <div class="form-section-body">
         <!-- 屋面做法 -->
         <div class="form-subsection">
             <div class="form-subsection-title d-flex justify-content-between align-items-center">
-                <span><?php echo sectionTitle('屋面做法', 'Roof Construction'); ?></span>
+                <span><span class="subsection-number">G.1</span> <?php echo sectionTitle('屋面做法', 'Roof Construction'); ?></span>
                 <button type="button" class="btn btn-sm btn-outline-primary" onclick="MethodManager.addRow('roof')">
                     <i class="bi bi-plus"></i> <?php echo $lang === 'en' ? 'Add' : '添加'; ?>
                 </button>
@@ -126,7 +126,7 @@ function renderMethodRow($method, $index, $category, $options, $lang, $selectPla
         <!-- 墙面做法 -->
         <div class="form-subsection">
             <div class="form-subsection-title d-flex justify-content-between align-items-center">
-                <span><?php echo sectionTitle('墙面做法', 'Wall Construction'); ?></span>
+                <span><span class="subsection-number">G.2</span> <?php echo sectionTitle('墙面做法', 'Wall Construction'); ?></span>
                 <button type="button" class="btn btn-sm btn-outline-primary" onclick="MethodManager.addRow('wall')">
                     <i class="bi bi-plus"></i> <?php echo $lang === 'en' ? 'Add' : '添加'; ?>
                 </button>

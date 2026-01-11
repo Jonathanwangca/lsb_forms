@@ -3,7 +3,7 @@
  * RFQ 列表页面
  * LSB RFQ System V3.1
  */
-$pageTitle = 'RFQ List - LSB RFQ System';
+$pageTitle = 'RFQ List - Inava Steel Customer Portal';
 require_once dirname(__DIR__) . '/includes/functions.php';
 
 // 获取过滤参数
@@ -18,22 +18,19 @@ if ($search) $filters['search'] = $search;
 
 $result = getRfqList($page, 20, $filters);
 
-require_once dirname(__DIR__) . '/includes/header.php';
+require_once dirname(__DIR__) . '/includes/rfq_header.php';
+$lang = getLang();
 ?>
 
-<div class="row">
-    <div class="col-12">
-        <!-- 页面标题和工具栏 -->
-        <div class="rfq-list-header">
-            <h4><i class="bi bi-list-ul"></i> RFQ List</h4>
-            <a href="/aiforms/rfq/form_rfq.php" class="btn btn-primary">
-                <i class="bi bi-plus-circle"></i> New RFQ
-            </a>
-        </div>
+<div class="card">
+    <div class="card-body">
 
         <!-- 过滤器 -->
         <div class="toolbar">
             <form class="row g-3 align-items-center" method="get">
+                <div class="col-auto">
+                    <h5 class="mb-0 me-3"><i class="fas fa-list me-2"></i><?php echo $lang === 'en' ? 'RFQ List' : 'RFQ 列表'; ?></h5>
+                </div>
                 <div class="col-auto">
                     <input type="text" class="form-control" name="search"
                            placeholder="Search RFQ No./Project/Job..."
@@ -59,7 +56,10 @@ require_once dirname(__DIR__) . '/includes/header.php';
                     </a>
                 </div>
             </form>
-            <div>
+            <div class="d-flex align-items-center">
+                <a href="/aiforms/rfq/form_rfq.php<?php echo $lang !== 'both' ? '?lang='.$lang : ''; ?>" class="btn btn-primary btn-sm me-3">
+                    <i class="fas fa-plus me-1"></i><?php echo $lang === 'en' ? 'New RFQ' : '新建 RFQ'; ?>
+                </a>
                 <span class="text-muted">Total: <?php echo $result['total']; ?> records</span>
             </div>
         </div>
@@ -72,20 +72,19 @@ require_once dirname(__DIR__) . '/includes/header.php';
                         <th>RFQ No.</th>
                         <th>Job Number</th>
                         <th>Project Name</th>
-                        <th>Contact/Attn</th>
                         <th>Location</th>
                         <th>Buildings</th>
                         <th>Dimensions (L×W)</th>
                         <th>Due Date</th>
                         <th>Status</th>
                         <th>Created</th>
-                        <th width="180">Actions</th>
+                        <th width="150">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (empty($result['list'])): ?>
                     <tr>
-                        <td colspan="11" class="text-center text-muted py-4">
+                        <td colspan="10" class="text-center text-muted py-4">
                             No RFQ records found.
                         </td>
                     </tr>
@@ -99,15 +98,6 @@ require_once dirname(__DIR__) . '/includes/header.php';
                         </td>
                         <td><?php echo h($row['job_number']); ?></td>
                         <td><?php echo h($row['project_name']); ?></td>
-                        <td>
-                            <?php if (!empty($row['contact_to'])): ?>
-                            <small class="text-muted"><?php echo h($row['contact_to']); ?></small><br>
-                            <?php endif; ?>
-                            <?php echo h($row['attn'] ?? ''); ?>
-                            <?php if (!empty($row['account_manager'])): ?>
-                            <br><small class="text-muted">AM: <?php echo h($row['account_manager']); ?></small>
-                            <?php endif; ?>
-                        </td>
                         <td><?php echo h($row['project_location']); ?></td>
                         <td class="text-center"><?php echo h($row['building_qty']); ?></td>
                         <td>
@@ -196,4 +186,4 @@ require_once dirname(__DIR__) . '/includes/header.php';
     </div>
 </div>
 
-<?php require_once dirname(__DIR__) . '/includes/footer.php'; ?>
+<?php require_once dirname(__DIR__) . '/includes/rfq_footer.php'; ?>
